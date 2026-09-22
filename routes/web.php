@@ -31,7 +31,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('provider.approved')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\Provider\ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [\App\Http\Controllers\Provider\ProfileController::class, 'update'])->name('profile.update');
-            // future: services, bookings routes go here once built
+        
+        Route::get('/services', [\App\Http\Controllers\Provider\ServiceController::class, 'index'])->name('services.index');
+        Route::get('/services/create', [\App\Http\Controllers\Provider\ServiceController::class, 'create'])->name('services.create');
+        Route::post('/services', [\App\Http\Controllers\Provider\ServiceController::class, 'store'])->name('services.store');
+        Route::get('/services/{service}/edit', [\App\Http\Controllers\Provider\ServiceController::class, 'edit'])->name('services.edit');
+        Route::patch('/services/{service}', [\App\Http\Controllers\Provider\ServiceController::class, 'update'])->name('services.update');
+        Route::delete('/services/{service}', [\App\Http\Controllers\Provider\ServiceController::class, 'destroy'])->name('services.destroy');
+        Route::patch('/services/{service}/deactivate', [\App\Http\Controllers\Provider\ServiceController::class, 'deactivate'])->name('services.deactivate');
+        Route::patch('/services/{service}/activate', [\App\Http\Controllers\Provider\ServiceController::class, 'activate'])->name('services.activate');
+        // future: services, bookings routes go here once built
             // Route::get('/services', ...)->name('services');
             // Route::get('/bookings', ...)->name('bookings');
         });
