@@ -46,7 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'totalCustomers' => \App\Models\User::where('role', 'customer')->count(),
                 'totalBookings' => 0, // fill in once bookings table exists
             ],
-        ]);
+        ]); 
     })->name('dashboard');
 
     Route::get('/providers', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'index'])
@@ -55,6 +55,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('providers.approve');
     Route::patch('/providers/{providerProfile}/reject', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'reject'])
         ->name('providers.reject');
+    Route::patch('/providers/{providerProfile}/suspend', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'suspend'])
+        ->name('providers.suspend');
+    Route::patch('/providers/{providerProfile}/unsuspend', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'unsuspend'])
+        ->name('providers.unsuspend');
+    Route::get('/providers/{providerProfile}', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'show'])
+        ->name('providers.show');
     });
 });
 
