@@ -7,14 +7,13 @@ use Illuminate\Support\Facades\Route;
 
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Home', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-})->name('home');
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\BrowseController;
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
+Route::get('/providers/{providerProfile}', [BrowseController::class, 'show'])->name('providers.show');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard.redirect');

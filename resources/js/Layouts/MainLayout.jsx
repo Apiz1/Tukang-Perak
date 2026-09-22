@@ -1,18 +1,20 @@
 import { Link, usePage, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
-// Guest navigation
+/* ---------- Guest navigation (public pages) ---------- */
 const guestNavItems = [
-    { label: 'Cari Tukang', href: '/services' },
-    { label: 'Cara Kerja', href: '#cara-kerja' },
-    { label: 'Untuk Tukang', href: '#untuk-tukang' },
+    { label: 'Home',         href: '/' },
+    { label: 'Cari Tukang',  href: '/browse' },
+    { label: 'Cara Kerja',   href: '/#cara-kerja' },
+    { label: 'Untuk Tukang', href: '/register?role=provider' },
 ];
 
-// Logged-in navigation (shared)
+/* ---------- Logged-in navigation ---------- */
 const authNavItems = [
-    { label: 'Cari Tukang', href: '/services' },
+    { label: 'Home',          href: '/' },
+    { label: 'Papan Pemuka',  href: '/dashboard' },
+    { label: 'Cari Tukang',   href: '/browse' },
     { label: 'Tempahan Saya', href: '/bookings' },
-    { label: 'Mesej', href: '/messages' },
 ];
 
 export default function MainLayout({ children }) {
@@ -29,7 +31,7 @@ export default function MainLayout({ children }) {
 
     const navItems = user ? authNavItems : guestNavItems;
 
-    // ---------- Close dropdown on outside click ----------
+    /* ---------- Close dropdown on outside click ---------- */
     useEffect(() => {
         if (!menuOpen) return;
 
@@ -52,12 +54,12 @@ export default function MainLayout({ children }) {
         };
     }, [menuOpen]);
 
-    // ---------- Close dropdown on route change ----------
+    /* ---------- Close dropdown on route change ---------- */
     useEffect(() => {
         return router.on('navigate', () => setMenuOpen(false));
     }, []);
 
-    // ---------- Modal: escape to close + lock body scroll + focus ----------
+    /* ---------- Modal: escape + scroll lock + focus ---------- */
     useEffect(() => {
         if (!showLogoutModal) return;
 
@@ -67,11 +69,9 @@ export default function MainLayout({ children }) {
             }
         };
 
-        // Lock body scroll
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
 
-        // Focus the cancel button for accessibility
         setTimeout(() => cancelBtnRef.current?.focus(), 50);
 
         document.addEventListener('keydown', handleEscape);
@@ -82,14 +82,14 @@ export default function MainLayout({ children }) {
         };
     }, [showLogoutModal, loggingOut]);
 
-    // ---------- Logout handlers ----------
+    /* ---------- Logout ---------- */
     const openLogoutModal = () => {
         setMenuOpen(false);
         setShowLogoutModal(true);
     };
 
     const closeLogoutModal = () => {
-        if (loggingOut) return; // don't close while logging out
+        if (loggingOut) return;
         setShowLogoutModal(false);
     };
 
@@ -100,7 +100,6 @@ export default function MainLayout({ children }) {
             {},
             {
                 onFinish: () => {
-                    // If the request fails for some reason, reset state
                     setLoggingOut(false);
                     setShowLogoutModal(false);
                 },
@@ -108,7 +107,6 @@ export default function MainLayout({ children }) {
         );
     };
 
-    // Build initials for avatar fallback (e.g. "Ali bin Ahmad" → "AA")
     const initials = user?.name
         ?.split(' ')
         .filter(Boolean)
@@ -211,6 +209,8 @@ export default function MainLayout({ children }) {
                                                 <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
                                                     {user.role === 'provider'
                                                         ? '🔧 Tukang'
+                                                        : user.role === 'admin'
+                                                        ? '⚙️ Pentadbir'
                                                         : '👤 Pelanggan'}
                                                 </span>
                                             )}
@@ -222,7 +222,7 @@ export default function MainLayout({ children }) {
                                                 Papan pemuka
                                             </DropdownLink>
 
-                                            {user.role === 'provider' ? (
+                                            {user.role === 'provider' && (
                                                 <>
                                                     <DropdownLink href="/provider/profile">
                                                         Profil tukang
@@ -230,11 +230,10 @@ export default function MainLayout({ children }) {
                                                     <DropdownLink href="/provider/services">
                                                         Perkhidmatan saya
                                                     </DropdownLink>
-                                                    <DropdownLink href="/provider/bookings">
-                                                        Tempahan masuk
-                                                    </DropdownLink>
                                                 </>
-                                            ) : (
+                                            )}
+
+                                            {user.role === 'customer' && (
                                                 <>
                                                     <DropdownLink href="/bookings">
                                                         Tempahan saya
@@ -243,6 +242,12 @@ export default function MainLayout({ children }) {
                                                         Tukang disimpan
                                                     </DropdownLink>
                                                 </>
+                                            )}
+
+                                            {user.role === 'admin' && (
+                                                <DropdownLink href="/admin/providers">
+                                                    Urus tukang
+                                                </DropdownLink>
                                             )}
 
                                             <DropdownLink href="/profile">
@@ -320,13 +325,13 @@ export default function MainLayout({ children }) {
                         <div>
                             <h2 className="text-sm font-semibold">Terokai</h2>
                             <div className="mt-4 flex flex-col gap-3 text-sm text-stone-600">
-                                <Link href="/services" className="hover:text-emerald-700">
+                                <Link href="/browse" className="hover:text-emerald-700">
                                     Cari perkhidmatan
                                 </Link>
-                                <Link href="#cara-kerja" className="hover:text-emerald-700">
+                                <Link href="/#cara-kerja" className="hover:text-emerald-700">
                                     Cara ia berfungsi
                                 </Link>
-                                <Link href="#untuk-tukang" className="hover:text-emerald-700">
+                                <Link href="/register" className="hover:text-emerald-700">
                                     Sertai sebagai tukang
                                 </Link>
                             </div>
@@ -341,10 +346,10 @@ export default function MainLayout({ children }) {
                                 >
                                     hello@tukangperak.my
                                 </a>
-                                <Link href="#faq" className="hover:text-emerald-700">
+                                <Link href="/#faq" className="hover:text-emerald-700">
                                     Soalan lazim
                                 </Link>
-                                <Link href="#privacy" className="hover:text-emerald-700">
+                                <Link href="/#privacy" className="hover:text-emerald-700">
                                     Privasi & terma
                                 </Link>
                             </div>
@@ -366,14 +371,12 @@ export default function MainLayout({ children }) {
                     aria-modal="true"
                     aria-labelledby="logout-modal-title"
                 >
-                    {/* Backdrop */}
                     <div
                         className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm transition-opacity"
                         onClick={closeLogoutModal}
                         aria-hidden="true"
                     />
 
-                    {/* Panel */}
                     <div
                         ref={modalRef}
                         className="relative w-full max-w-md overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-2xl shadow-stone-900/20"
@@ -383,7 +386,6 @@ export default function MainLayout({ children }) {
                         }}
                     >
                         <div className="p-7 sm:p-8">
-                            {/* Icon */}
                             <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-rose-50">
                                 <svg
                                     viewBox="0 0 20 20"
@@ -400,7 +402,6 @@ export default function MainLayout({ children }) {
                                 </svg>
                             </div>
 
-                            {/* Text */}
                             <h2
                                 id="logout-modal-title"
                                 className="mt-5 text-center font-serif text-2xl tracking-tight text-stone-900"
@@ -416,7 +417,6 @@ export default function MainLayout({ children }) {
                                 . Anda boleh log masuk semula pada bila-bila masa.
                             </p>
 
-                            {/* Actions */}
                             <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row">
                                 <button
                                     type="button"
@@ -449,7 +449,6 @@ export default function MainLayout({ children }) {
                 </div>
             )}
 
-            {/* Animation keyframe — scoped for this modal */}
             <style>{`
                 @keyframes modalIn {
                     from { opacity: 0; transform: translateY(8px) scale(0.98); }

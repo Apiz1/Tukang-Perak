@@ -1,261 +1,381 @@
 import { Head, Link } from '@inertiajs/react';
-import MainLayout from '@/Layouts/MainLayout';
+import CustomerLayout from '@/Layouts/MainLayout';
 
-const categoryStyles = [
-    { icon: '❄️', color: 'bg-sky-50 text-sky-700' },
-    { icon: '🔧', color: 'bg-amber-50 text-amber-700' },
-    { icon: '⚡', color: 'bg-violet-50 text-violet-700' },
-    { icon: '🧹', color: 'bg-rose-50 text-rose-700' },
-    { icon: '🎨', color: 'bg-orange-50 text-orange-700' },
-    { icon: '🛠️', color: 'bg-emerald-50 text-emerald-700' },
-];
+/* ---------- Small icons ---------- */
+const Icon = {
+    Search: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <circle cx="9" cy="9" r="5.5" />
+            <path d="M14 14l3 3" />
+        </svg>
+    ),
+    Calendar: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="3" y="4" width="14" height="13" rx="2" />
+            <path d="M3 8h14M7 2v4M13 2v4" />
+        </svg>
+    ),
+    Clock: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <circle cx="10" cy="10" r="7.5" />
+            <path d="M10 5.5V10l3 1.8" />
+        </svg>
+    ),
+    Check: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M4 10.5l4 4 8-9" />
+        </svg>
+    ),
+    User: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <circle cx="10" cy="7" r="3" />
+            <path d="M4 17c0-3 2.7-5 6-5s6 2 6 5" />
+        </svg>
+    ),
+    ArrowRight: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.9"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M4 10h12M11 5l5 5-5 5" />
+        </svg>
+    ),
+    Sparkle: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M10 3l1.5 4.5L16 9l-4.5 1.5L10 15l-1.5-4.5L4 9l4.5-1.5L10 3z" />
+        </svg>
+    ),
+};
 
-const steps = [
-    {
-        number: '01',
-        title: 'Cari perkhidmatan',
-        text: 'Pilih kerja yang anda perlukan dan kawasan anda.',
-    },
-    {
-        number: '02',
-        title: 'Bandingkan tukang',
-        text: 'Lihat profil, ulasan dan pengalaman sebelum memilih.',
-    },
-    {
-        number: '03',
-        title: 'Hubungi dengan yakin',
-        text: 'Teruskan perbualan dan tetapkan masa yang sesuai.',
-    },
-];
+/* ---------- Helpers ---------- */
+const formatDate = (date) => {
+    if (!date) return '—';
+    return new Date(date).toLocaleDateString('ms-MY', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+};
 
-export default function Home({ categories = [], featuredProviders = [] }) {
+const statusStyles = {
+    pending:   'bg-amber-50 text-amber-700 border-amber-200',
+    accepted:  'bg-sky-50 text-sky-700 border-sky-200',
+    completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
+};
+
+const statusLabels = {
+    pending:   'Menunggu',
+    accepted:  'Diterima',
+    completed: 'Selesai',
+    cancelled: 'Dibatalkan',
+};
+
+/* ---------- Stat card ---------- */
+function StatCard({ label, value, hint, icon: Ico, tone = 'emerald' }) {
+    const tones = {
+        emerald: 'bg-emerald-50 text-emerald-700',
+        amber:   'bg-amber-50 text-amber-700',
+        sky:     'bg-sky-50 text-sky-700',
+    };
+
     return (
-        <MainLayout>
-            <Head title="Tukang Perak — Servis tempatan yang dipercayai" />
-
-            <section className="overflow-hidden bg-stone-50">
-                <div className="mx-auto grid max-w-7xl gap-12 px-5 pb-16 pt-16 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:pb-24 lg:pt-24">
-                    <div className="max-w-2xl">
-                        <p className="mb-5 flex items-center gap-2 text-sm font-semibold text-emerald-700">
-                            <span className="h-px w-8 bg-emerald-700" />
-                            SERVIS TEMPATAN, PERAK
-                        </p>
-
-                        <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-stone-900 sm:text-5xl lg:text-6xl">
-                            Cari tukang yang
-                            <span className="block text-emerald-700">betul untuk kerja anda.</span>
-                        </h1>
-
-                        <p className="mt-6 max-w-xl text-base leading-7 text-stone-600 sm:text-lg">
-                            Dari paip bocor hingga aircond tidak sejuk, temui penyedia
-                            perkhidmatan tempatan yang sedia membantu.
-                        </p>
-
-                        <form
-                            className="mt-8 rounded-2xl border border-stone-200 bg-white p-2 shadow-lg shadow-stone-900/5 sm:flex"
-                            action="/providers"
-                            method="GET"
-                        >
-                            <div className="flex flex-1 items-center gap-3 border-b border-stone-100 px-3 py-3 sm:border-b-0 sm:border-r">
-                                <span className="text-lg">⌕</span>
-                                <select
-                                    name="category"
-                                    className="w-full bg-transparent text-sm font-medium text-stone-700 outline-none"
-                                    defaultValue=""
-                                >
-                                    <option value="" disabled>
-                                        Servis apa yang anda cari?
-                                    </option>
-                                    {categories.map((category) => (
-                                        <option key={category.id} value={category.slug ?? category.id}>
-                                            {category.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="flex flex-1 items-center gap-3 px-3 py-3">
-                                <span className="text-base">⌖</span>
-                                <select
-                                    name="district"
-                                    className="w-full bg-transparent text-sm font-medium text-stone-700 outline-none"
-                                    defaultValue=""
-                                >
-                                    <option value="">Semua kawasan di Perak</option>
-                                    <option value="ipoh">Ipoh</option>
-                                    <option value="taiping">Taiping</option>
-                                    <option value="kuala-kangsar">Kuala Kangsar</option>
-                                    <option value="manjung">Manjung</option>
-                                    <option value="teluk-intan">Teluk Intan</option>
-                                </select>
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="mt-1 w-full rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800 sm:mt-0 sm:w-auto"
-                            >
-                                Cari tukang
-                            </button>
-                        </form>
-
-                        <p className="mt-4 text-xs text-stone-500">
-                            Popular: Aircond · Plumbing · Elektrik · Pembersihan
-                        </p>
-                    </div>
-
-                    <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-                        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-amber-200/50 blur-3xl" />
-                        <div className="relative overflow-hidden rounded-[2rem] bg-emerald-800 p-7 text-white shadow-2xl shadow-emerald-950/20 sm:p-9">
-                            <p className="text-sm font-medium text-emerald-100">Mudah. Tempatan. Dipercayai.</p>
-                            <div className="mt-12 border-t border-white/20 pt-6">
-                                <div className="flex items-end justify-between">
-                                    <div>
-                                        <p className="text-4xl font-semibold tracking-tight">Perak</p>
-                                        <p className="mt-1 text-sm text-emerald-100">
-                                            Servis dekat dengan anda
-                                        </p>
-                                    </div>
-                                    <span className="text-5xl">⌂</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div className="rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-emerald-200 hover:shadow-md">
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                        {label}
+                    </p>
+                    <p className="mt-2 font-serif text-3xl tracking-tight text-stone-900">
+                        {value}
+                    </p>
+                    {hint && (
+                        <p className="mt-1 text-xs text-stone-500">{hint}</p>
+                    )}
                 </div>
-            </section>
-
-            <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
-                <div className="flex items-end justify-between gap-6">
-                    <div>
-                        <p className="text-sm font-semibold text-emerald-700">CARI MENGIKUT KATEGORI</p>
-                        <h2 className="mt-2 text-3xl font-semibold tracking-tight">
-                            Apa yang perlu dibaiki?
-                        </h2>
-                    </div>
-                    <Link
-                        href="/services"
-                        className="hidden text-sm font-semibold text-emerald-700 hover:text-emerald-800 sm:block"
+                {Ico && (
+                    <span
+                        className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tones[tone]}`}
                     >
-                        Lihat semua →
+                        <Ico style={{ width: 18, height: 18 }} />
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/* ---------- Action row ---------- */
+function ActionRow({ href, title, subtitle, icon: Ico, tone = 'emerald' }) {
+    const tones = {
+        emerald: 'bg-emerald-700 text-white',
+        amber:   'bg-amber-100 text-amber-700',
+        stone:   'bg-stone-100 text-stone-700',
+    };
+
+    return (
+        <Link
+            href={href}
+            className="group flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
+        >
+            <span
+                className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${tones[tone]}`}
+            >
+                <Ico style={{ width: 18, height: 18 }} />
+            </span>
+            <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-stone-800">
+                    {title}
+                </span>
+                <span className="block text-xs text-stone-500">{subtitle}</span>
+            </span>
+            <Icon.ArrowRight
+                className="shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-emerald-700"
+                style={{ width: 16, height: 16 }}
+            />
+        </Link>
+    );
+}
+
+/* ============================ PAGE ============================ */
+export default function Dashboard({ auth, stats = {}, recentBookings = [] }) {
+    const firstName = auth?.user?.name?.split(' ')[0] ?? 'Pelanggan';
+
+    return (
+        <CustomerLayout>
+            <Head title="Papan pemuka — Tukang Perak" />
+
+            <div className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+                {/* ============ HEADER ============ */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-700">
+                            <span className="h-px w-6 bg-emerald-700" />
+                            PAPAN PEMUKA
+                        </p>
+                        <h1 className="mt-3 font-serif text-4xl tracking-tight text-stone-900 sm:text-5xl">
+                            Selamat kembali, {firstName}.
+                        </h1>
+                        <p className="mt-3 max-w-xl text-sm leading-6 text-stone-600">
+                            Cari tukang tempatan, urus tempahan, dan pastikan
+                            setiap kerja di rumah anda selesai dengan baik.
+                        </p>
+                    </div>
+
+                    <Link
+                        href="/browse"
+                        className="group inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md"
+                    >
+                        <Icon.Search style={{ width: 14, height: 14 }} />
+                        Cari tukang
+                        <Icon.ArrowRight
+                            className="transition-transform group-hover:translate-x-0.5"
+                            style={{ width: 14, height: 14 }}
+                        />
                     </Link>
                 </div>
 
-                <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                    {categories.slice(0, 6).map((category, index) => {
-                        const style = categoryStyles[index % categoryStyles.length];
+                {/* ============ STAT CARDS ============ */}
+                <section className="mt-8 grid gap-4 sm:grid-cols-3">
+                    <StatCard
+                        label="Tempahan aktif"
+                        value={stats.activeBookings ?? 0}
+                        hint="Sedang berjalan"
+                        icon={Icon.Clock}
+                        tone="amber"
+                    />
+                    <StatCard
+                        label="Selesai"
+                        value={stats.completedBookings ?? 0}
+                        hint="Kerja selesai"
+                        icon={Icon.Check}
+                        tone="emerald"
+                    />
+                    <StatCard
+                        label="Jumlah tempahan"
+                        value={stats.totalBookings ?? 0}
+                        hint="Sepanjang masa"
+                        icon={Icon.Calendar}
+                        tone="sky"
+                    />
+                </section>
 
-                        return (
-                            <Link
-                                key={category.id}
-                                href={`/providers?category=${category.slug ?? category.id}`}
-                                className="group rounded-2xl border border-stone-200 bg-white p-5 transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg hover:shadow-stone-900/5"
-                            >
-                                <span className={`grid h-11 w-11 place-items-center rounded-xl text-xl ${style.color}`}>
-                                    {style.icon}
-                                </span>
-                                <p className="mt-5 text-sm font-semibold text-stone-800 group-hover:text-emerald-700">
-                                    {category.name}
-                                </p>
-                                <p className="mt-1 text-xs text-stone-500">
-                                    {category.providers_count ?? 'Lihat penyedia'}{' '}
-                                    {category.providers_count ? 'penyedia' : ''}
-                                </p>
-                            </Link>
-                        );
-                    })}
-                </div>
-            </section>
+                {/* ============ QUICK ACTIONS ============ */}
+                <section className="mt-10">
+                    <div className="mb-4">
+                        <h2 className="font-serif text-2xl tracking-tight text-stone-900">
+                            Tindakan pantas
+                        </h2>
+                        <p className="mt-1 text-sm text-stone-600">
+                            Perkara biasa yang anda boleh buat di sini.
+                        </p>
+                    </div>
 
-            <section className="border-y border-stone-200 bg-white">
-                <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
-                    <div className="flex items-end justify-between gap-6">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <ActionRow
+                            href="/browse"
+                            title="Cari perkhidmatan"
+                            subtitle="Terokai penyedia berhampiran"
+                            icon={Icon.Search}
+                            tone="emerald"
+                        />
+                        <ActionRow
+                            href="/customer/bookings"
+                            title="Tempahan saya"
+                            subtitle="Lihat dan urus semua tempahan"
+                            icon={Icon.Calendar}
+                            tone="amber"
+                        />
+                        <ActionRow
+                            href="/profile"
+                            title="Tetapan akaun"
+                            subtitle="Kemas kini profil anda"
+                            icon={Icon.User}
+                            tone="stone"
+                        />
+                    </div>
+                </section>
+
+                {/* ============ RECENT ACTIVITY ============ */}
+                <section className="mt-10">
+                    <div className="mb-4 flex items-end justify-between gap-4">
                         <div>
-                            <p className="text-sm font-semibold text-emerald-700">PILIHAN MINGGU INI</p>
-                            <h2 className="mt-2 text-3xl font-semibold tracking-tight">
-                                Tukang yang mendapat kepercayaan pelanggan
+                            <h2 className="font-serif text-2xl tracking-tight text-stone-900">
+                                Aktiviti terkini
                             </h2>
+                            <p className="mt-1 text-sm text-stone-600">
+                                Tempahan terbaru anda
+                            </p>
                         </div>
-                        <Link
-                            href="/providers"
-                            className="hidden text-sm font-semibold text-emerald-700 hover:text-emerald-800 sm:block"
-                        >
-                            Terokai semua →
-                        </Link>
-                    </div>
-
-                    <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                        {featuredProviders.map((provider) => (
+                        {recentBookings.length > 0 && (
                             <Link
-                                key={provider.id}
-                                href={`/providers/${provider.slug ?? provider.id}`}
-                                className="group overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 transition hover:border-emerald-200 hover:shadow-xl hover:shadow-stone-900/5"
+                                href="/customer/bookings"
+                                className="hidden text-sm font-bold text-emerald-700 transition hover:text-emerald-800 sm:inline-flex sm:items-center sm:gap-1"
                             >
-                                <div className="flex items-center gap-4 p-5">
-                                    <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-emerald-100 text-lg font-semibold text-emerald-800">
-                                        {provider.avatar_url ? (
-                                            <img
-                                                src={provider.avatar_url}
-                                                alt=""
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            provider.name?.charAt(0)
-                                        )}
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="truncate font-semibold text-stone-900 group-hover:text-emerald-700">
-                                            {provider.name}
-                                        </h3>
-                                        <p className="mt-0.5 truncate text-sm text-stone-600">
-                                            {provider.service_name ?? provider.category?.name ?? 'Penyedia perkhidmatan'}
-                                        </p>
-                                        <div className="mt-2 flex items-center gap-2 text-xs">
-                                            <span className="font-semibold text-amber-600">
-                                                ★ {provider.rating ?? '5.0'}
-                                            </span>
-                                            <span className="text-stone-400">
-                                                {provider.review_count ? `(${provider.review_count} ulasan)` : 'Disahkan'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between border-t border-stone-200 px-5 py-3 text-xs text-stone-500">
-                                    <span>{provider.district ?? 'Perak'}</span>
-                                    <span className="font-semibold text-emerald-700">Lihat profil →</span>
-                                </div>
+                                Lihat semua
+                                <Icon.ArrowRight style={{ width: 14, height: 14 }} />
                             </Link>
-                        ))}
+                        )}
                     </div>
 
-                    {featuredProviders.length === 0 && (
-                        <div className="mt-8 rounded-2xl border border-dashed border-stone-300 p-10 text-center text-sm text-stone-500">
-                            Penyedia perkhidmatan pilihan akan dipaparkan di sini.
+                    {recentBookings.length === 0 ? (
+                        /* ---------- Empty state ---------- */
+                        <div className="rounded-2xl border border-dashed border-stone-300 bg-white p-10 text-center">
+                            <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
+                                <Icon.Sparkle style={{ width: 24, height: 24 }} />
+                            </span>
+                            <h3 className="mt-4 font-serif text-xl tracking-tight text-stone-900">
+                                Belum ada tempahan
+                            </h3>
+                            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-stone-600">
+                                Mula dengan mencari tukang untuk kerja di rumah
+                                anda. Tempahan pertama anda akan muncul di sini.
+                            </p>
+                            <Link
+                                href="/browse"
+                                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md"
+                            >
+                                <Icon.Search style={{ width: 14, height: 14 }} />
+                                Cari tukang sekarang
+                                <Icon.ArrowRight style={{ width: 14, height: 14 }} />
+                            </Link>
+                        </div>
+                    ) : (
+                        /* ---------- Bookings list ---------- */
+                        <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
+                            <ul className="divide-y divide-stone-200">
+                                {recentBookings.map((booking) => {
+                                    const status = booking.status ?? 'pending';
+                                    const badge =
+                                        statusStyles[status] ??
+                                        statusStyles.pending;
+
+                                    return (
+                                        <li key={booking.id}>
+                                            <Link
+                                                href={`/customer/bookings/${booking.id}`}
+                                                className="group flex items-center gap-4 px-5 py-4 transition hover:bg-stone-50"
+                                            >
+                                                <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
+                                                    {booking.provider_avatar_url ? (
+                                                        <img
+                                                            src={booking.provider_avatar_url}
+                                                            alt=""
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        booking.provider_name?.charAt(0) ??
+                                                        'T'
+                                                    )}
+                                                </span>
+
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0">
+                                                            <p className="truncate text-sm font-semibold text-stone-900 group-hover:text-emerald-700">
+                                                                {booking.service_name ??
+                                                                    'Tempahan'}
+                                                            </p>
+                                                            <p className="mt-0.5 truncate text-xs text-stone-500">
+                                                                {booking.provider_name ??
+                                                                    'Tukang'}
+                                                                {booking.district &&
+                                                                    ` · ${booking.district}`}
+                                                            </p>
+                                                        </div>
+
+                                                        <span
+                                                            className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${badge}`}
+                                                        >
+                                                            {statusLabels[status] ??
+                                                                status}
+                                                        </span>
+                                                    </div>
+
+                                                    <p className="mt-1.5 text-xs text-stone-500">
+                                                        <Icon.Calendar
+                                                            style={{
+                                                                width: 11,
+                                                                height: 11,
+                                                                display: 'inline',
+                                                                marginRight: 4,
+                                                                verticalAlign: '-1px',
+                                                            }}
+                                                        />
+                                                        {formatDate(
+                                                            booking.scheduled_at ??
+                                                                booking.created_at
+                                                        )}
+                                                    </p>
+                                                </div>
+
+                                                <Icon.ArrowRight
+                                                    className="shrink-0 text-stone-400 transition group-hover:translate-x-0.5 group-hover:text-emerald-700"
+                                                    style={{ width: 16, height: 16 }}
+                                                />
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+
+                            {/* Mobile view all link */}
+                            <div className="border-t border-stone-200 px-5 py-3 text-center sm:hidden">
+                                <Link
+                                    href="/customer/bookings"
+                                    className="text-sm font-bold text-emerald-700 hover:text-emerald-800"
+                                >
+                                    Lihat semua tempahan →
+                                </Link>
+                            </div>
                         </div>
                     )}
-                </div>
-            </section>
-
-            <section id="cara-kerja" className="bg-stone-900 text-white">
-                <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
-                    <div className="max-w-xl">
-                        <p className="text-sm font-semibold text-emerald-400">BAGAIMANA IA BERFUNGSI</p>
-                        <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-                            Urusan rumah sepatutnya tidak rumit.
-                        </h2>
-                    </div>
-
-                    <div className="mt-12 grid gap-10 md:grid-cols-3">
-                        {steps.map((step) => (
-                            <div key={step.number} className="border-t border-white/20 pt-5">
-                                <span className="text-sm font-semibold text-emerald-400">{step.number}</span>
-                                <h3 className="mt-5 text-xl font-semibold">{step.title}</h3>
-                                <p className="mt-3 max-w-xs text-sm leading-6 text-stone-400">{step.text}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-        </MainLayout>
+                </section>
+            </div>
+        </CustomerLayout>
     );
 }
