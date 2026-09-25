@@ -23,15 +23,26 @@ class ProfileController extends Controller
         $request->validate([
             'business_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
-            'photo' => 'nullable|image|max:2048', // 2MB max
+            'category' => 'required|string|max:255',
+            'district' => 'required|string|max:255',
+            'photo' => 'nullable|image|max:2048',
         ]);
 
         $profile = auth()->user()->providerProfile;
 
+        $categoryChanged = $profile->category !== $request->category;
+        $districtChanged = $profile->district !== $request->district;
+
         $data = [
             'business_name' => $request->business_name,
             'description' => $request->description,
+            'category' => $request->category,
+            'district' => $request->district,
         ];
+
+        if ($categoryChanged || $districtChanged) {
+            $data['status'] = 'pending';
+        }
 
         if ($request->hasFile('photo')) {
             if ($profile->photo_path) {
@@ -43,6 +54,10 @@ class ProfileController extends Controller
 
         $profile->update($data);
 
-        return back()->with('success', 'Profile updated.');
+        $message = ($categoryChanged || $districtChanged)
+            ? 'Profile updated. Since you changed your category or district, your account is pending re-approval.'
+            : 'Profile updated.';
+
+        return redirect()->route('provider.dashboard')->with('success', $message);
     }
 }

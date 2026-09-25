@@ -7,17 +7,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['provider_profile_id', 'title', 'description', 'base_price', 'price_type', 'is_active'])]
-class Service extends Model
+#[Fillable(['customer_id', 'provider_profile_id', 'service_id', 'preferred_date', 'district', 'address', 'notes', 'price', 'status'])]
+class Booking extends Model
 {
     use HasFactory;
 
     protected function casts(): array
     {
         return [
-            'base_price' => 'decimal:2',
-            'is_active' => 'boolean',
+            'preferred_date' => 'date',
+            'price' => 'decimal:2',
         ];
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'customer_id');
     }
 
     public function providerProfile(): BelongsTo
@@ -25,8 +30,8 @@ class Service extends Model
         return $this->belongsTo(ProviderProfile::class);
     }
 
-    public function bookings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function service(): BelongsTo
     {
-        return $this->hasMany(Booking::class);
+        return $this->belongsTo(Service::class);
     }
 }

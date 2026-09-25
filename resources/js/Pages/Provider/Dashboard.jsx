@@ -405,7 +405,7 @@ export default function Dashboard({ providerProfile, stats, recentBookings = [] 
                         accent="green"
                     />
                     <StatCard
-                        label="Sebut harga menunggu"
+                        label="Tempahan baharu"
                         value={stats?.pendingQuotes ?? 0}
                         hint="Perlu tindakan"
                         icon={Icon.Clock}

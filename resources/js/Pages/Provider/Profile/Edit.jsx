@@ -62,11 +62,33 @@ const Icon = {
             <path d="M7 3v4h6M7 13h6" />
         </svg>
     ),
+    Alert: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M10 3.5l7.5 13h-15L10 3.5z" />
+            <path d="M10 8.5v3.5M10 14.2h.01" />
+        </svg>
+    ),
 };
 
-/* ---------- Limits ---------- */
+/* ---------- Option lists ---------- */
 const MAX_NAME = 80;
 const MAX_DESC = 500;
+
+const categoryOptions = [
+    { value: 'aircon',     label: 'Aircond Repair & Servicing' },
+    { value: 'plumbing',   label: 'Plumbing' },
+    { value: 'cleaning',   label: 'House Cleaning' },
+    { value: 'electrical', label: 'Electrical' },
+];
+
+const districtOptions = [
+    { value: 'parit_buntar',  label: 'Parit Buntar' },
+    { value: 'kuala_kangsar', label: 'Kuala Kangsar' },
+    { value: 'taiping',       label: 'Taiping' },
+    { value: 'ipoh',          label: 'Ipoh' },
+    { value: 'teluk_intan',   label: 'Teluk Intan' },
+];
 
 export default function Edit({ providerProfile }) {
     const { flash } = usePage().props;
@@ -74,15 +96,17 @@ export default function Edit({ providerProfile }) {
     const fileInputRef = useRef(null);
     const [previewUrl, setPreviewUrl] = useState(null);
 
-    /* 🆕 Confirmation modal state */
+    /* Confirmation modal state */
     const [showConfirm, setShowConfirm] = useState(false);
 
-    /* 🆕 Success toast state */
+    /* Success toast state */
     const [toast, setToast] = useState(null);
 
-    const { data, setData, post, processing, errors, progress, isDirty } = useForm({
+    const { data, setData, post, processing, errors, progress } = useForm({
         business_name: providerProfile?.business_name ?? '',
         description:   providerProfile?.description ?? '',
+        category:      providerProfile?.category ?? 'aircon',
+        district:      providerProfile?.district ?? 'ipoh',
         photo:         null,
         _method:       'patch',
     });
@@ -94,7 +118,7 @@ export default function Edit({ providerProfile }) {
         };
     }, [previewUrl]);
 
-    /* 🆕 Show toast when Laravel flashes a status message */
+    /* Show toast when Laravel flashes a status message */
     useEffect(() => {
         if (flash?.status) {
             setToast({ type: 'success', message: flash.status });
@@ -118,13 +142,12 @@ export default function Edit({ providerProfile }) {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    /* 🆕 Submit form now opens the confirmation modal instead of posting */
+    /* Submit flow: form → modal → PATCH */
     const askSubmit = (e) => {
         e.preventDefault();
         setShowConfirm(true);
     };
 
-    /* 🆕 Fires after the user confirms */
     const confirmSubmit = () => {
         post(route('provider.profile.update'), {
             forceFormData: true,
@@ -135,16 +158,21 @@ export default function Edit({ providerProfile }) {
                 setPreviewUrl(null);
                 setShowConfirm(false);
 
-                // Fallback toast in case Laravel doesn't flash a status
                 setToast({ type: 'success', message: 'Profil berjaya dikemas kini.' });
                 setTimeout(() => setToast(null), 4500);
             },
             onError: () => {
-                // Close the modal so the user can see field errors
                 setShowConfirm(false);
             },
         });
     };
+
+    /* Detect whether category / district has changed from the original */
+    const categoryChanged =
+        data.category && data.category !== providerProfile?.category;
+    const districtChanged =
+        data.district && data.district !== providerProfile?.district;
+    const needsReapproval = categoryChanged || districtChanged;
 
     const displayImage = previewUrl
         ? previewUrl
@@ -159,7 +187,7 @@ export default function Edit({ providerProfile }) {
             <Head title="Profil tukang — Tukang Perak" />
 
             <div className="mx-auto w-full max-w-3xl">
-                {/* ---------- Inline flash (kept) ---------- */}
+                {/* Inline flash */}
                 {flash?.status && (
                     <div className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-700 text-[11px] font-bold text-white">
@@ -171,7 +199,7 @@ export default function Edit({ providerProfile }) {
                     </div>
                 )}
 
-                {/* ---------- Header ---------- */}
+                {/* Header */}
                 <div className="provider-page-header">
                     <p className="eyebrow">PROFIL</p>
                     <h1 className="provider-page-heading mt-3">
@@ -301,6 +329,7 @@ export default function Edit({ providerProfile }) {
                         </div>
 
                         <div className="provider-card__body space-y-5">
+                            {/* Business name */}
                             <div>
                                 <div className="flex items-baseline justify-between gap-3">
                                     <label
@@ -334,6 +363,7 @@ export default function Edit({ providerProfile }) {
                                 )}
                             </div>
 
+                            {/* Description */}
                             <div>
                                 <div className="flex items-baseline justify-between gap-3">
                                     <label
@@ -363,6 +393,114 @@ export default function Edit({ providerProfile }) {
                                     <p className="mt-2 text-xs font-semibold text-rose-600">
                                         {errors.description}
                                     </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ============ SERVICE INFO (category + district) ============ */}
+                    <div className="provider-card">
+                        <div className="provider-card__header">
+                            <div className="flex items-center gap-3">
+                                <span className="grid h-9 w-9 place-items-center rounded-lg bg-[color:var(--lime)] text-[color:var(--green-dark)]">
+                                    <Icon.Shield style={{ width: 16, height: 16 }} />
+                                </span>
+                                <div>
+                                    <h2 className="provider-card__title">
+                                        Perkhidmatan & kawasan
+                                    </h2>
+                                    <p className="mt-0.5 text-xs text-[color:var(--muted)]">
+                                        Tukang apa anda dan di mana anda beroperasi
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="provider-card__body space-y-5">
+                            {/* Category */}
+                            <div>
+                                <label
+                                    htmlFor="category"
+                                    className="block text-sm font-semibold text-[color:var(--ink)]"
+                                >
+                                    Kategori perkhidmatan
+                                </label>
+
+                                <select
+                                    id="category"
+                                    value={data.category}
+                                    onChange={(e) => setData('category', e.target.value)}
+                                    required
+                                    className="mt-2 w-full rounded-xl border border-[color:var(--line)] bg-white px-4 py-3 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--green)] focus:ring-2 focus:ring-[color:var(--green)]/15"
+                                >
+                                    {categoryOptions.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {errors.category && (
+                                    <p className="mt-2 text-xs font-semibold text-rose-600">
+                                        {errors.category}
+                                    </p>
+                                )}
+
+                                {categoryChanged && (
+                                    <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700">
+                                            <Icon.Alert style={{ width: 12, height: 12 }} />
+                                        </span>
+                                        <p className="text-xs leading-5 text-amber-800">
+                                            Menukar kategori akan memerlukan
+                                            semakan semula oleh pentadbir. Profil
+                                            anda akan kembali ke status{' '}
+                                            <strong>Menunggu</strong> sehingga
+                                            diluluskan.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* District */}
+                            <div>
+                                <label
+                                    htmlFor="district"
+                                    className="block text-sm font-semibold text-[color:var(--ink)]"
+                                >
+                                    Daerah operasi
+                                </label>
+
+                                <select
+                                    id="district"
+                                    value={data.district}
+                                    onChange={(e) => setData('district', e.target.value)}
+                                    required
+                                    className="mt-2 w-full rounded-xl border border-[color:var(--line)] bg-white px-4 py-3 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--green)] focus:ring-2 focus:ring-[color:var(--green)]/15"
+                                >
+                                    {districtOptions.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {errors.district && (
+                                    <p className="mt-2 text-xs font-semibold text-rose-600">
+                                        {errors.district}
+                                    </p>
+                                )}
+
+                                {districtChanged && (
+                                    <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700">
+                                            <Icon.Alert style={{ width: 12, height: 12 }} />
+                                        </span>
+                                        <p className="text-xs leading-5 text-amber-800">
+                                            Menukar daerah akan memerlukan
+                                            semakan semula oleh pentadbir.
+                                        </p>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -479,6 +617,22 @@ export default function Edit({ providerProfile }) {
                                 boleh mengemas kini semula pada bila-bila masa.
                             </p>
 
+                            {/* Re-approval notice inside the confirm modal */}
+                            {needsReapproval && (
+                                <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700">
+                                        <Icon.Alert style={{ width: 12, height: 12 }} />
+                                    </span>
+                                    <p className="text-xs leading-5 text-amber-800">
+                                        {categoryChanged && districtChanged
+                                            ? 'Anda menukar kategori dan daerah. Profil akan disemak semula.'
+                                            : categoryChanged
+                                            ? 'Anda menukar kategori. Profil akan disemak semula.'
+                                            : 'Anda menukar daerah. Profil akan disemak semula.'}
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
                                 <button
                                     type="button"
@@ -504,6 +658,10 @@ export default function Edit({ providerProfile }) {
                                     )}
                                 </button>
                             </div>
+
+                            <p className="mt-4 text-center text-[10px] uppercase tracking-wide text-[color:var(--muted)]">
+                                Tekan ESC untuk batal
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -531,7 +689,6 @@ export default function Edit({ providerProfile }) {
                 </div>
             )}
 
-            {/* Scoped animation keyframes */}
             <style>{`
                 @keyframes toastIn {
                     from { opacity: 0; transform: translateY(8px) scale(0.98); }

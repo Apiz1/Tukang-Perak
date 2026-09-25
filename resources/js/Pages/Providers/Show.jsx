@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import MainLayout from '@/Layouts/MainLayout';
 
 /* ---------- Small icons ---------- */
@@ -66,6 +66,20 @@ const Icon = {
             <path d="M10 9v5M10 6.2h.01" />
         </svg>
     ),
+    Calendar: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="3" y="4" width="14" height="13" rx="2" />
+            <path d="M3 8h14M7 2v4M13 2v4" />
+        </svg>
+    ),
+    Lock: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="4" y="9" width="12" height="8" rx="2" />
+            <path d="M7 9V6.5a3 3 0 116 0V9" />
+        </svg>
+    ),
 };
 
 /* ---------- Static label maps ---------- */
@@ -116,11 +130,22 @@ const getDistrictLabel = (v) => districtLabels[v] ?? v ?? 'Perak';
 
 /* ============================ PAGE ============================ */
 export default function Show({ provider }) {
+    const { auth } = usePage().props;
+    const user = auth?.user ?? null;
+
     const name = getProviderName(provider);
     const services = Array.isArray(provider?.services) ? provider.services : [];
 
     const rating = provider?.rating ?? provider?.average_rating ?? null;
     const reviews = provider?.review_count ?? provider?.reviews_count ?? null;
+
+    /* Who can book?
+       - Logged-in customer: yes
+       - Guest: show a "Log masuk" CTA
+       - Provider/Admin: hidden — they can't book their own services */
+    const isCustomer = user?.role === 'customer';
+    const isGuest = !user;
+    const canBook = isCustomer;
 
     return (
         <MainLayout>
@@ -138,11 +163,9 @@ export default function Show({ provider }) {
 
                 {/* ============ HERO CARD ============ */}
                 <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white">
-                    {/* Cover strip */}
                     <div className="h-24 bg-gradient-to-br from-emerald-700 to-emerald-900 sm:h-28" />
 
                     <div className="px-5 pb-6 sm:px-8 sm:pb-8">
-                        {/* Avatar + CTA row */}
                         <div className="-mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
                             <div className="flex items-end gap-4">
                                 <div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-2xl border-4 border-white bg-emerald-100 text-3xl font-bold text-emerald-800 shadow-lg sm:h-28 sm:w-28">
@@ -165,7 +188,6 @@ export default function Show({ provider }) {
                                 </div>
                             </div>
 
-                            {/* Primary CTA */}
                             {provider?.user?.email && (
                                 <a
                                     href={`mailto:${provider.user.email}`}
@@ -177,7 +199,6 @@ export default function Show({ provider }) {
                             )}
                         </div>
 
-                        {/* Name + meta */}
                         <div className="mt-5">
                             <h1 className="font-serif text-3xl tracking-tight text-stone-900 sm:text-4xl">
                                 {name}
@@ -234,7 +255,6 @@ export default function Show({ provider }) {
                 <div className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-start">
                     {/* LEFT */}
                     <div className="flex flex-col gap-6">
-                        {/* Description */}
                         {provider?.description && (
                             <div className="rounded-2xl border border-stone-200 bg-white p-6">
                                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-700">
@@ -247,7 +267,7 @@ export default function Show({ provider }) {
                             </div>
                         )}
 
-                        {/* Services */}
+                        {/* ============ SERVICES ============ */}
                         <div className="rounded-2xl border border-stone-200 bg-white">
                             <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4">
                                 <div>
@@ -313,20 +333,57 @@ export default function Show({ provider }) {
                                                     <p className="font-serif text-xl tracking-tight text-emerald-700">
                                                         {formatServicePrice(service)}
                                                     </p>
-                                                    <button
-                                                        type="button"
-                                                        disabled
-                                                        title="Tempahan akan dibuka tidak lama lagi"
-                                                        className="mt-2 inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-stone-400"
-                                                    >
-                                                        Tempah
-                                                        <Icon.ArrowRight
-                                                            style={{
-                                                                width: 11,
-                                                                height: 11,
-                                                            }}
-                                                        />
-                                                    </button>
+
+                                                    {/* 🆕 Book button — role-aware */}
+                                                    {canBook ? (
+                                                        /* Customer: real book link */
+                                                        <Link
+                                                            href={`/services/${service.id}/book`}
+                                                            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md"
+                                                        >
+                                                            <Icon.Calendar
+                                                                style={{
+                                                                    width: 12,
+                                                                    height: 12,
+                                                                }}
+                                                            />
+                                                            Tempah
+                                                            <Icon.ArrowRight
+                                                                style={{
+                                                                    width: 11,
+                                                                    height: 11,
+                                                                }}
+                                                            />
+                                                        </Link>
+                                                    ) : isGuest ? (
+                                                        /* Guest: prompt to log in */
+                                                        <Link
+                                                            href="/login"
+                                                            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                                                        >
+                                                            <Icon.Lock
+                                                                style={{
+                                                                    width: 12,
+                                                                    height: 12,
+                                                                }}
+                                                            />
+                                                            Log masuk untuk menempah
+                                                        </Link>
+                                                    ) : (
+                                                        /* Provider/Admin: disabled */
+                                                        <span
+                                                            title="Hanya pelanggan boleh menempah"
+                                                            className="mt-2 inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-bold text-stone-400"
+                                                        >
+                                                            <Icon.Calendar
+                                                                style={{
+                                                                    width: 12,
+                                                                    height: 12,
+                                                                }}
+                                                            />
+                                                            Tempah
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </li>
@@ -338,7 +395,6 @@ export default function Show({ provider }) {
 
                     {/* RIGHT */}
                     <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
-                        {/* Contact card */}
                         {(provider?.user?.email || provider?.user?.phone_number) && (
                             <div className="rounded-2xl border border-stone-200 bg-white p-5">
                                 <h3 className="text-sm font-bold text-stone-900">
@@ -394,7 +450,6 @@ export default function Show({ provider }) {
                             </div>
                         )}
 
-                        {/* Trust card */}
                         <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
                             <div className="flex items-start gap-3">
                                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-700 text-white">
@@ -412,7 +467,6 @@ export default function Show({ provider }) {
                             </div>
                         </div>
 
-                        {/* Info card */}
                         <div className="rounded-2xl border border-stone-200 bg-white p-5">
                             <div className="flex items-start gap-3">
                                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700">

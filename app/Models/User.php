@@ -34,4 +34,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(ProviderProfile::class);
     }
+
+    public function bookings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Booking::class, 'customer_id');
+    }
 }

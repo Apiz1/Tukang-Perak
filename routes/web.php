@@ -17,9 +17,15 @@ Route::get('/providers/{providerProfile}', [BrowseController::class, 'show'])->n
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard.redirect');
+    Route::get('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'create'])->name('services.book');
+    Route::post('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'store'])->name('services.book.store');
 
     Route::middleware('role:customer')->prefix('customer')->name('customer.')->group(function () {
-        Route::get('/dashboard', fn () => Inertia::render('Customer/Dashboard'))->name('dashboard');
+        Route::get('/dashboard', \App\Http\Controllers\Customer\DashboardController::class)->name('dashboard');
+        
+        Route::get('/bookings', [\App\Http\Controllers\Customer\BookingController::class, 'index'])->name('bookings.index');
+        Route::get('/bookings/{booking}', [\App\Http\Controllers\Customer\BookingController::class, 'show'])->name('bookings.show');
+        Route::patch('/bookings/{booking}/cancel', [\App\Http\Controllers\Customer\BookingController::class, 'cancel'])->name('bookings.cancel');
     });
 
    Route::middleware('role:provider')->prefix('provider')->name('provider.')->group(function () {
@@ -39,9 +45,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/services/{service}', [\App\Http\Controllers\Provider\ServiceController::class, 'destroy'])->name('services.destroy');
         Route::patch('/services/{service}/deactivate', [\App\Http\Controllers\Provider\ServiceController::class, 'deactivate'])->name('services.deactivate');
         Route::patch('/services/{service}/activate', [\App\Http\Controllers\Provider\ServiceController::class, 'activate'])->name('services.activate');
-        // future: services, bookings routes go here once built
-            // Route::get('/services', ...)->name('services');
-            // Route::get('/bookings', ...)->name('bookings');
+       
+        Route::get('/bookings', [\App\Http\Controllers\Provider\BookingController::class, 'index'])->name('bookings.index');
+        Route::patch('/bookings/{booking}/accept', [\App\Http\Controllers\Provider\BookingController::class, 'accept'])->name('bookings.accept');
+        Route::patch('/bookings/{booking}/decline', [\App\Http\Controllers\Provider\BookingController::class, 'decline'])->name('bookings.decline');
+        Route::patch('/bookings/{booking}/complete', [\App\Http\Controllers\Provider\BookingController::class, 'complete'])->name('bookings.complete');
+
         });
     });
 
@@ -52,7 +61,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'pendingProviders' => \App\Models\ProviderProfile::where('status', 'pending')->count(),
                 'totalProviders' => \App\Models\ProviderProfile::where('status', 'approved')->count(),
                 'totalCustomers' => \App\Models\User::where('role', 'customer')->count(),
-                'totalBookings' => 0, // fill in once bookings table exists
+                'totalBookings' => \App\Models\Booking::count(),
             ],
         ]); 
     })->name('dashboard');
@@ -69,6 +78,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('providers.unsuspend');
     Route::get('/providers/{providerProfile}', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'show'])
         ->name('providers.show');
+
+    Route::get('/bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings/{booking}', [\App\Http\Controllers\Admin\BookingController::class, 'show'])->name('bookings.show');
     });
 });
 

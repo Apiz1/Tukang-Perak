@@ -14,7 +14,7 @@ const authNavItems = [
     { label: 'Home',          href: '/' },
     { label: 'Papan Pemuka',  href: '/dashboard' },
     { label: 'Cari Tukang',   href: '/browse' },
-    { label: 'Tempahan Saya', href: '/bookings' },
+    { label: 'Tempahan Saya', href: '/customer/bookings' },
 ];
 
 export default function MainLayout({ children }) {
@@ -217,7 +217,12 @@ export default function MainLayout({ children }) {
                                         </div>
 
                                         {/* Menu items */}
+                                            
                                         <div className="py-1.5">
+                                            <DropdownLink href="/">
+                                                Home
+                                            </DropdownLink>
+
                                             <DropdownLink href="/dashboard">
                                                 Papan pemuka
                                             </DropdownLink>
@@ -235,7 +240,7 @@ export default function MainLayout({ children }) {
 
                                             {user.role === 'customer' && (
                                                 <>
-                                                    <DropdownLink href="/bookings">
+                                                    <DropdownLink href="/customer/bookings">
                                                         Tempahan saya
                                                     </DropdownLink>
                                                     <DropdownLink href="/favorites">

@@ -22,4 +22,9 @@ class ProviderProfile extends Model
     {
         return $this->hasMany(Service::class);
     }
+
+    public function bookings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
 }
