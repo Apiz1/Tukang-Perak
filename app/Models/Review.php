@@ -7,10 +7,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['booking_id', 'customer_id', 'provider_profile_id', 'rating', 'comment'])]
+#[Fillable(['booking_id', 'customer_id', 'provider_profile_id', 'rating', 'comment', 'provider_reply', 'replied_at'])]
 class Review extends Model
 {
     use HasFactory;
+     
+    protected function casts(): array
+    {
+        return [
+            'replied_at' => 'datetime',
+        ];
+    }
 
     public function booking(): BelongsTo
     {

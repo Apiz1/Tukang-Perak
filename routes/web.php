@@ -53,6 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/bookings/{booking}/decline', [\App\Http\Controllers\Provider\BookingController::class, 'decline'])->name('bookings.decline');
         Route::patch('/bookings/{booking}/complete', [\App\Http\Controllers\Provider\BookingController::class, 'complete'])->name('bookings.complete');
 
+        Route::get('/reviews', [\App\Http\Controllers\Provider\ReviewController::class, 'index'])->name('reviews.index');
+        Route::patch('/reviews/{review}/reply', [\App\Http\Controllers\Provider\ReviewController::class, 'reply'])->name('reviews.reply');
+
         });
     });
 

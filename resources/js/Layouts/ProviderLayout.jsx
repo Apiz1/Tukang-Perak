@@ -69,6 +69,13 @@ const Icon = {
             <path d="M7 9V6.5a3 3 0 116 0V9" />
         </svg>
     ),
+    /* 🆕 Star icon for the Reviews nav item */
+    Star: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M10 1.6l2.6 5.3 5.9.85-4.25 4.15 1 5.85L10 15l-5.25 2.75 1-5.85L1.5 7.75l5.9-.85L10 1.6z" />
+        </svg>
+    ),
 };
 
 /* ---------- Navigation config — plain paths ---------- */
@@ -80,6 +87,8 @@ const navSections = [
         items: [
             { label: 'Papan pemuka', href: '/provider/dashboard',           icon: 'Home' },
             { label: 'Tempahan',     href: '/provider/bookings',  icon: 'Calendar', requiresApproved: true },
+            /* 🆕 Reviews — sits next to Bookings, gated the same way */
+            { label: 'Ulasan',       href: '/provider/reviews',   icon: 'Star',     requiresApproved: true },
         ],
     },
     {

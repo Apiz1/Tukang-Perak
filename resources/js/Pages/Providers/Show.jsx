@@ -453,84 +453,85 @@ export default function Show({ provider }) {
                             ) : (
                                 <ul className="divide-y divide-stone-200">
                                     {reviews.map((review) => (
-                                        <li
-                                            key={review.id}
-                                            className="p-5 sm:p-6"
-                                        >
-                                            <div className="flex items-start gap-3">
-                                                <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
-                                                    {review?.customer?.photo_path ? (
-                                                        <img
-                                                            src={`/storage/${review.customer.photo_path}`}
-                                                            alt=""
-                                                            className="h-full w-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        getReviewerInitial(review)
-                                                    )}
-                                                </span>
+                                    <li
+                                        key={review.id}
+                                        className="p-5 sm:p-6"
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
+                                                {review?.customer?.photo_path ? (
+                                                    <img
+                                                        src={`/storage/${review.customer.photo_path}`}
+                                                        alt=""
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    getReviewerInitial(review)
+                                                )}
+                                            </span>
 
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                                        <div className="min-w-0">
-                                                            <p className="truncate text-sm font-bold text-stone-900">
-                                                                {getReviewerName(review)}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm font-bold text-stone-900">
+                                                            {getReviewerName(review)}
+                                                        </p>
+                                                        {review.created_at && (
+                                                            <p className="mt-0.5 text-[11px] text-stone-500">
+                                                                {formatDate(review.created_at)}
                                                             </p>
-                                                            {review.created_at && (
-                                                                <p className="mt-0.5 text-[11px] text-stone-500">
-                                                                    {formatDate(
-                                                                        review.created_at
-                                                                    )}
-                                                                </p>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex items-center gap-1">
-                                                            {[1, 2, 3, 4, 5].map(
-                                                                (n) => (
-                                                                    <span
-                                                                        key={n}
-                                                                        className={
-                                                                            n <=
-                                                                            review.rating
-                                                                                ? 'text-amber-500'
-                                                                                : 'text-stone-300'
-                                                                        }
-                                                                    >
-                                                                        {n <=
-                                                                        review.rating ? (
-                                                                            <Icon.Star
-                                                                                style={{
-                                                                                    width: 13,
-                                                                                    height: 13,
-                                                                                }}
-                                                                            />
-                                                                        ) : (
-                                                                            <Icon.StarOutline
-                                                                                style={{
-                                                                                    width: 13,
-                                                                                    height: 13,
-                                                                                }}
-                                                                            />
-                                                                        )}
-                                                                    </span>
-                                                                )
-                                                            )}
-                                                            <span className="ml-1 text-xs font-semibold text-stone-600">
-                                                                {review.rating}/5
-                                                            </span>
-                                                        </div>
+                                                        )}
                                                     </div>
 
-                                                    {review.comment && (
-                                                        <p className="mt-3 whitespace-pre-line text-sm leading-6 text-stone-700">
-                                                            {review.comment}
-                                                        </p>
-                                                    )}
+                                                    <div className="flex items-center gap-1">
+                                                        {[1, 2, 3, 4, 5].map((n) => (
+                                                            <span
+                                                                key={n}
+                                                                className={
+                                                                    n <= review.rating
+                                                                        ? 'text-amber-500'
+                                                                        : 'text-stone-300'
+                                                                }
+                                                            >
+                                                                {n <= review.rating ? (
+                                                                    <Icon.Star
+                                                                        style={{ width: 13, height: 13 }}
+                                                                    />
+                                                                ) : (
+                                                                    <Icon.StarOutline
+                                                                        style={{ width: 13, height: 13 }}
+                                                                    />
+                                                                )}
+                                                            </span>
+                                                        ))}
+                                                        <span className="ml-1 text-xs font-semibold text-stone-600">
+                                                            {review.rating}/5
+                                                        </span>
+                                                    </div>
                                                 </div>
+
+                                                {review.comment && (
+                                                    <p className="mt-3 whitespace-pre-line text-sm leading-6 text-stone-700">
+                                                        {review.comment}
+                                                    </p>
+                                                )}
+
+                                                {/* 🆕 Provider reply */}
+                                                {review.provider_reply && (
+                                                    <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                                                        <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                                                            <Icon.Chat style={{ width: 11, height: 11 }} />
+                                                            Balasan tukang
+                                                        </p>
+                                                        <p className="mt-1.5 whitespace-pre-line text-sm leading-6 text-stone-700">
+                                                            {review.provider_reply}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
-                                        </li>
-                                    ))}
+                                        </div>
+                                    </li>
+                                ))}
                                 </ul>
                             )}
                         </div>
