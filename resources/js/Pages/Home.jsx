@@ -57,8 +57,11 @@ const getProviderDistrict = (p) =>
     p.user?.district ??
     'Perak';
 
-const getProviderRating = (p) => p.rating ?? p.average_rating ?? null;
-const getProviderReviews = (p) => p.review_count ?? p.reviews_count ?? null;
+const getProviderRating = (p) =>
+    p.reviews_avg_rating ?? p.rating ?? p.average_rating ?? null;
+
+const getProviderReviews = (p) =>
+    p.reviews_count ?? p.review_count ?? null;
 
 const getProviderServicesCount = (p) => {
     if (Array.isArray(p.services)) return p.services.length;
@@ -258,6 +261,7 @@ export default function Home({ categories = [], featuredProviders = [] }) {
                                 const rating = getProviderRating(provider);
                                 const reviews = getProviderReviews(provider);
                                 const servicesCount = getProviderServicesCount(provider);
+                                const hasReviews = reviews != null && reviews > 0 && rating != null;
 
                                 return (
                                     <Link
@@ -287,14 +291,20 @@ export default function Home({ categories = [], featuredProviders = [] }) {
                                                     {getProviderCategory(provider)}
                                                 </p>
                                                 <div className="mt-2 flex items-center gap-2 text-xs">
-                                                    <span className="font-semibold text-amber-600">
-                                                        ★ {rating ?? '5.0'}
-                                                    </span>
-                                                    <span className="text-stone-400">
-                                                        {reviews
-                                                            ? `(${reviews} ulasan)`
-                                                            : 'Disahkan'}
-                                                    </span>
+                                                    {hasReviews ? (
+                                                        <>
+                                                            <span className="font-semibold text-amber-600">
+                                                                ★ {Number(rating).toFixed(1)}
+                                                            </span>
+                                                            <span className="text-stone-400">
+                                                                ({reviews} ulasan)
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-stone-400">
+                                                            Disahkan
+                                                        </span>
+                                                    )}
                                                     {servicesCount != null && (
                                                         <span className="text-stone-400">
                                                             · {servicesCount} perkhidmatan

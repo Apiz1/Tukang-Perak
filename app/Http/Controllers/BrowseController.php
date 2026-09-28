@@ -12,6 +12,8 @@ class BrowseController extends Controller
     public function index(Request $request): Response
     {
         $providers = ProviderProfile::where('status', 'approved')
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
             ->with(['user', 'services' => fn ($q) => $q->where('is_active', true)])
             ->when($request->category, fn ($q, $category) => $q->where('category', $category))
             ->when($request->district, fn ($q, $district) => $q->where('district', $district))
@@ -33,8 +35,15 @@ class BrowseController extends Controller
     {
         abort_unless($providerProfile->status === 'approved', 404);
 
-        return Inertia::render('Providers/Show', [
-            'provider' => $providerProfile->load(['user', 'services' => fn ($q) => $q->where('is_active', true)]),
+       return Inertia::render('Providers/Show', [
+            'provider' => $providerProfile
+                ->loadAvg('reviews', 'rating')
+                ->loadCount('reviews')
+                ->load([
+                    'user',
+                    'services' => fn ($q) => $q->where('is_active', true),
+                    'reviews' => fn ($q) => $q->with('customer:id,name')->latest()->take(10),
+                ]),
         ]);
     }
 }

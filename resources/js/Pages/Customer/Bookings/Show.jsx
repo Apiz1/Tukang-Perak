@@ -1,5 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 
 /* ---------- Small icons ---------- */
@@ -88,12 +88,21 @@ const Icon = {
             <path d="M10 2l6 2.5v5c0 3.6-2.6 6.5-6 8-3.4-1.5-6-4.4-6-8v-5L10 2z" />
         </svg>
     ),
-    Money: (p) => (
+    Star: (p) => (
+        <svg viewBox="0 0 20 20" fill="currentColor" {...p}>
+            <path d="M10 1.6l2.6 5.3 5.9.85-4.25 4.15 1 5.85L10 15l-5.25 2.75 1-5.85L1.5 7.75l5.9-.85L10 1.6z" />
+        </svg>
+    ),
+    StarOutline: (p) => (
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <rect x="2.5" y="6" width="15" height="9" rx="2" />
-            <circle cx="10" cy="10.5" r="2" />
-            <path d="M5 6v9M15 6v9" />
+            <path d="M10 1.6l2.6 5.3 5.9.85-4.25 4.15 1 5.85L10 15l-5.25 2.75 1-5.85L1.5 7.75l5.9-.85L10 1.6z" />
+        </svg>
+    ),
+    Sparkle: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M10 3l1.5 4.5L16 9l-4.5 1.5L10 15l-1.5-4.5L4 9l4.5-1.5L10 3z" />
         </svg>
     ),
 };
@@ -130,7 +139,7 @@ const statusConfig = {
         label: 'Selesai',
         cls: 'border-emerald-200 bg-emerald-50 text-emerald-800',
         icon: Icon.Check,
-        hint: 'Kerja telah selesai.',
+        hint: 'Kerja telah selesai. Tinggalkan ulasan anda di bawah.',
     },
     cancelled: {
         label: 'Dibatalkan',
@@ -193,19 +202,154 @@ function StatusBanner({ status }) {
     );
 }
 
+/* ---------- Interactive star picker ---------- */
+function StarPicker({ value, onChange }) {
+    return (
+        <div className="flex items-center gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => {
+                const active = n <= value;
+                return (
+                    <button
+                        key={n}
+                        type="button"
+                        onClick={() => onChange(n)}
+                        aria-label={`Beri ${n} bintang`}
+                        className={`grid h-10 w-10 place-items-center rounded-lg border transition ${
+                            active
+                                ? 'border-amber-300 bg-amber-50 text-amber-500'
+                                : 'border-stone-200 bg-white text-stone-400 hover:border-amber-200 hover:text-amber-500'
+                        }`}
+                    >
+                        {active ? (
+                            <Icon.Star style={{ width: 18, height: 18 }} />
+                        ) : (
+                            <Icon.StarOutline style={{ width: 18, height: 18 }} />
+                        )}
+                    </button>
+                );
+            })}
+            <span className="ml-2 text-sm font-semibold text-stone-600">
+                {value}/5
+            </span>
+        </div>
+    );
+}
+
+/* ---------- Existing review card ---------- */
+function ReviewCard({ review }) {
+    return (
+        <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600">
+                    <Icon.Star style={{ width: 18, height: 18 }} />
+                </span>
+                <div>
+                    <p className="text-sm font-bold text-stone-900">
+                        Ulasan anda
+                    </p>
+                    <p className="mt-0.5 text-xs text-stone-500">
+                        Terima kasih kerana berkongsi pengalaman
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                    Penilaian
+                </p>
+                <div className="mt-1.5 flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                        <span
+                            key={n}
+                            className={
+                                n <= review.rating
+                                    ? 'text-amber-500'
+                                    : 'text-stone-300'
+                            }
+                        >
+                            {n <= review.rating ? (
+                                <Icon.Star style={{ width: 16, height: 16 }} />
+                            ) : (
+                                <Icon.StarOutline
+                                    style={{ width: 16, height: 16 }}
+                                />
+                            )}
+                        </span>
+                    ))}
+                    <span className="ml-2 text-sm font-semibold text-stone-700">
+                        {review.rating}/5
+                    </span>
+                </div>
+
+                {review.comment && (
+                    <>
+                        <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                            Komen
+                        </p>
+                        <p className="mt-1.5 whitespace-pre-line text-sm leading-6 text-stone-700">
+                            {review.comment}
+                        </p>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
 /* ============================ PAGE ============================ */
 export default function Show({ booking }) {
+    const { flash } = usePage().props;
+
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+    const [toast, setToast] = useState(null);
 
     const providerName = getProviderName(booking);
     const providerPhoto = getProviderPhoto(booking);
-    const canCancel = booking.status === 'requested';
 
+    const canCancel = booking.status === 'requested';
+    const hasReview = Boolean(booking.review);
+    const canReview = booking.status === 'completed' && !hasReview;
+
+    /* ---------- Review form ---------- */
+    const {
+        data: reviewData,
+        setData: setReviewData,
+        post: postReview,
+        processing: submittingReview,
+        errors: reviewErrors,
+        reset: resetReview,
+    } = useForm({
+        rating: 5,
+        comment: '',
+    });
+
+    /* Show toast when Laravel flashes a success message */
+    useEffect(() => {
+        if (flash?.success) {
+            setToast(flash.success);
+            const t = setTimeout(() => setToast(null), 4500);
+            return () => clearTimeout(t);
+        }
+    }, [flash?.success]);
+
+    const submitReview = (e) => {
+        e.preventDefault();
+        postReview(route('customer.bookings.review', booking.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                resetReview();
+                setToast('Ulasan anda telah dihantar. Terima kasih!');
+                setTimeout(() => setToast(null), 4500);
+            },
+        });
+    };
+
+    /* ---------- Cancel flow ---------- */
     const handleCancel = () => {
         setCancelling(true);
         router.patch(
-            route('customer.bookings.cancel', booking.id),
+            `/customer/bookings/${booking.id}/cancel`,
             {},
             {
                 preserveScroll: true,
@@ -224,12 +368,28 @@ export default function Show({ booking }) {
             <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 sm:py-12">
                 {/* Back link */}
                 <Link
-                    href={route('customer.bookings.index')}
+                    href="/customer/bookings"
                     className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-stone-500 transition hover:text-emerald-700"
                 >
                     <Icon.ArrowLeft style={{ width: 14, height: 14 }} />
                     Kembali ke tempahan saya
                 </Link>
+
+                {/* Success toast */}
+                {toast && (
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
+                    >
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-700 text-[11px] font-bold text-white">
+                            ✓
+                        </span>
+                        <p className="text-sm font-medium text-emerald-800">
+                            {toast}
+                        </p>
+                    </div>
+                )}
 
                 {/* ============ STATUS BANNER ============ */}
                 <StatusBanner status={booking.status} />
@@ -268,7 +428,6 @@ export default function Show({ booking }) {
                                 </div>
                             </div>
 
-                            {/* Price badge */}
                             {booking.price != null && (
                                 <div className="shrink-0 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
@@ -333,11 +492,7 @@ export default function Show({ booking }) {
                                 {booking.notes && (
                                     <div className="sm:col-span-2">
                                         <DetailRow
-                                            icon={
-                                                <Icon.Info
-                                                    style={{ width: 14, height: 14 }}
-                                                />
-                                            }
+                                            icon={<Icon.Info style={{ width: 14, height: 14 }} />}
                                             label="Nota anda"
                                             value={booking.notes}
                                             multiline
@@ -373,23 +528,134 @@ export default function Show({ booking }) {
                                         className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-700 transition hover:border-emerald-200 hover:text-emerald-700 sm:inline-flex"
                                     >
                                         Lihat profil
-                                        <Icon.ArrowRight
-                                            style={{ width: 12, height: 12 }}
-                                        />
+                                        <Icon.ArrowRight style={{ width: 12, height: 12 }} />
                                     </Link>
                                 </div>
 
-                                {/* Mobile: view profile */}
                                 <Link
                                     href={`/providers/${booking.provider_profile?.id ?? ''}`}
                                     className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-700 transition hover:border-emerald-200 hover:text-emerald-700 sm:hidden"
                                 >
                                     Lihat profil tukang
-                                    <Icon.ArrowRight
-                                        style={{ width: 12, height: 12 }}
-                                    />
+                                    <Icon.ArrowRight style={{ width: 12, height: 12 }} />
                                 </Link>
                             </div>
+                        )}
+
+                        {/* ---------- Existing review ---------- */}
+                        {hasReview && <ReviewCard review={booking.review} />}
+
+                        {/* ---------- Review form ---------- */}
+                        {canReview && (
+                            <form
+                                onSubmit={submitReview}
+                                className="rounded-2xl border border-stone-200 bg-white"
+                            >
+                                <div className="border-b border-stone-200 px-5 py-4 sm:px-6">
+                                    <div className="flex items-center gap-3">
+                                        <span className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-600">
+                                            <Icon.Sparkle
+                                                style={{ width: 16, height: 16 }}
+                                            />
+                                        </span>
+                                        <div>
+                                            <h2 className="text-sm font-bold text-stone-900">
+                                                Tinggalkan ulasan
+                                            </h2>
+                                            <p className="mt-0.5 text-xs text-stone-500">
+                                                Kongsi pengalaman anda dengan
+                                                tukang ini
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-5 p-5 sm:p-6">
+                                    {/* Star rating */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-stone-800">
+                                            Penilaian anda
+                                        </label>
+                                        <p className="mt-0.5 text-xs text-stone-500">
+                                            Berapa banyak bintang yang anda
+                                            berikan?
+                                        </p>
+
+                                        <div className="mt-3">
+                                            <StarPicker
+                                                value={reviewData.rating}
+                                                onChange={(n) =>
+                                                    setReviewData('rating', n)
+                                                }
+                                            />
+                                        </div>
+
+                                        {reviewErrors.rating && (
+                                            <p className="mt-2 text-xs font-semibold text-rose-600">
+                                                {reviewErrors.rating}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Comment */}
+                                    <div>
+                                        <div className="flex items-baseline justify-between gap-3">
+                                            <label
+                                                htmlFor="comment"
+                                                className="block text-sm font-semibold text-stone-800"
+                                            >
+                                                Komen (pilihan)
+                                            </label>
+                                            <span className="text-[11px] text-stone-500">
+                                                {reviewData.comment.length}/1000
+                                            </span>
+                                        </div>
+
+                                        <textarea
+                                            id="comment"
+                                            value={reviewData.comment}
+                                            onChange={(e) =>
+                                                setReviewData(
+                                                    'comment',
+                                                    e.target.value
+                                                )
+                                            }
+                                            rows={4}
+                                            maxLength={1000}
+                                            placeholder="Contoh: Kerja cepat dan kemas. Harga berpatutan. Akan gunakan lagi."
+                                            className="mt-2 w-full resize-none rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm leading-6 text-stone-800 placeholder-stone-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+                                        />
+
+                                        {reviewErrors.comment && (
+                                            <p className="mt-2 text-xs font-semibold text-rose-600">
+                                                {reviewErrors.comment}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Submit */}
+                                    <button
+                                        type="submit"
+                                        disabled={submittingReview}
+                                        className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                                    >
+                                        {submittingReview ? (
+                                            <>
+                                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                                Menghantar...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Hantar ulasan
+                                                <Icon.ArrowRight
+                                                    className="transition-transform group-hover:translate-x-0.5"
+                                                    style={{ width: 14, height: 14 }}
+                                                />
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
                         )}
                     </div>
 
@@ -534,7 +800,6 @@ export default function Show({ booking }) {
                                 Batalkan tempahan?
                             </h2>
 
-                            {/* Summary */}
                             <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
                                 <p className="text-xs font-semibold text-stone-700">
                                     {booking.service?.title ?? 'Tempahan'}

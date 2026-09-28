@@ -19,7 +19,8 @@ class DashboardController extends Controller
                 'totalBookings' => $bookings ? (clone $bookings)->count() : 0,
                 'pendingQuotes' => $bookings ? (clone $bookings)->where('status', 'requested')->count() : 0,
                 'completedJobs' => $bookings ? (clone $bookings)->where('status', 'completed')->count() : 0,
-                'averageRating' => null, // no reviews table yet
+                'averageRating' => $profile ? $profile->reviews()->avg('rating') : null,
+                'reviewCount' => $profile ? $profile->reviews()->count() : 0,
             ],
             'recentBookings' => $profile
                 ? $profile->bookings()->with(['service', 'customer'])->latest()->take(5)->get()

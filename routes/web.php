@@ -26,6 +26,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bookings', [\App\Http\Controllers\Customer\BookingController::class, 'index'])->name('bookings.index');
         Route::get('/bookings/{booking}', [\App\Http\Controllers\Customer\BookingController::class, 'show'])->name('bookings.show');
         Route::patch('/bookings/{booking}/cancel', [\App\Http\Controllers\Customer\BookingController::class, 'cancel'])->name('bookings.cancel');
+
+        Route::post('/bookings/{booking}/review', [\App\Http\Controllers\Customer\ReviewController::class, 'store'])->name('bookings.review');
     });
 
    Route::middleware('role:provider')->prefix('provider')->name('provider.')->group(function () {

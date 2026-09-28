@@ -418,8 +418,8 @@ function ProviderCard({ provider }) {
     const servicesCount = getServicesCount(provider);
     const cheapest = getCheapestService(provider);
 
-    const rating = provider.rating ?? provider.average_rating ?? null;
-    const reviews = provider.review_count ?? provider.reviews_count ?? null;
+    const rating = provider.reviews_avg_rating ?? provider.rating ?? provider.average_rating ?? null;
+    const reviews = provider.reviews_count ?? provider.review_count ?? null;
 
     return (
         <Link
@@ -452,16 +452,16 @@ function ProviderCard({ provider }) {
                     )}
 
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                        {rating != null && (
-                            <span className="inline-flex items-center gap-1 font-bold text-amber-600">
-                                <Icon.Star style={{ width: 11, height: 11 }} />
-                                {Number(rating).toFixed(1)}
-                            </span>
-                        )}
-                        {reviews != null && reviews > 0 ? (
-                            <span className="text-stone-500">
-                                ({reviews} ulasan)
-                            </span>
+                        {reviews > 0 && rating != null ? (
+                            <>
+                                <span className="inline-flex items-center gap-1 font-bold text-amber-600">
+                                    <Icon.Star style={{ width: 11, height: 11 }} />
+                                    {Number(rating).toFixed(1)}
+                                </span>
+                                <span className="text-stone-500">
+                                    ({reviews} ulasan)
+                                </span>
+                            </>
                         ) : (
                             <span className="text-stone-500">Disahkan</span>
                         )}

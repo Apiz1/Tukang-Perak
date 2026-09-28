@@ -18,6 +18,8 @@ class HomeController extends Controller
                 ['value' => 'electrical', 'label' => 'Electrical'],
             ],
             'featuredProviders' => ProviderProfile::where('status', 'approved')
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews')
                 ->with(['user', 'services' => fn ($q) => $q->where('is_active', true)])
                 ->latest()
                 ->take(6)

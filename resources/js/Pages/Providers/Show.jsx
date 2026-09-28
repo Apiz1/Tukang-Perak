@@ -33,6 +33,12 @@ const Icon = {
             <path d="M10 1.6l2.6 5.3 5.9.85-4.25 4.15 1 5.85L10 15l-5.25 2.75 1-5.85L1.5 7.75l5.9-.85L10 1.6z" />
         </svg>
     ),
+    StarOutline: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M10 1.6l2.6 5.3 5.9.85-4.25 4.15 1 5.85L10 15l-5.25 2.75 1-5.85L1.5 7.75l5.9-.85L10 1.6z" />
+        </svg>
+    ),
     Shield: (p) => (
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
@@ -80,6 +86,12 @@ const Icon = {
             <path d="M7 9V6.5a3 3 0 116 0V9" />
         </svg>
     ),
+    Chat: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M3 5.5A2.5 2.5 0 015.5 3h9A2.5 2.5 0 0117 5.5v6a2.5 2.5 0 01-2.5 2.5H8l-5 3.5V5.5z" />
+        </svg>
+    ),
 };
 
 /* ---------- Static label maps ---------- */
@@ -120,6 +132,15 @@ const formatServicePrice = (service) => {
     return service.price_type === 'hourly' ? `${base} / jam` : base;
 };
 
+const formatDate = (date) => {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('ms-MY', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+};
+
 const getProviderName = (p) =>
     p?.business_name ?? p?.user?.name ?? 'Penyedia perkhidmatan';
 
@@ -128,6 +149,12 @@ const getProviderInitial = (p) => getProviderName(p).charAt(0).toUpperCase();
 const getCategoryLabel = (v) => categoryLabels[v] ?? v ?? '—';
 const getDistrictLabel = (v) => districtLabels[v] ?? v ?? 'Perak';
 
+const getReviewerName = (review) =>
+    review?.customer?.name ?? review?.user?.name ?? 'Pelanggan';
+
+const getReviewerInitial = (review) =>
+    getReviewerName(review).charAt(0).toUpperCase();
+
 /* ============================ PAGE ============================ */
 export default function Show({ provider }) {
     const { auth } = usePage().props;
@@ -135,9 +162,10 @@ export default function Show({ provider }) {
 
     const name = getProviderName(provider);
     const services = Array.isArray(provider?.services) ? provider.services : [];
+    const reviews = Array.isArray(provider?.reviews) ? provider.reviews : [];
 
-    const rating = provider?.rating ?? provider?.average_rating ?? null;
-    const reviews = provider?.review_count ?? provider?.reviews_count ?? null;
+    const rating = provider?.reviews_avg_rating ?? provider?.rating ?? provider?.average_rating ?? null;
+    const reviewsCount = provider?.reviews_count ?? provider?.review_count ?? reviews.length ?? null;
 
     /* Who can book?
        - Logged-in customer: yes
@@ -239,11 +267,11 @@ export default function Show({ provider }) {
                                         {getDistrictLabel(provider.district)}
                                     </span>
                                 )}
-                                {rating != null && (
+                                {rating != null && reviewsCount > 0 && (
                                     <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
                                         <Icon.Star style={{ width: 11, height: 11 }} />
                                         {Number(rating).toFixed(1)}
-                                        {reviews ? ` (${reviews} ulasan)` : ''}
+                                        {reviewsCount ? ` (${reviewsCount} ulasan)` : ''}
                                     </span>
                                 )}
                             </div>
@@ -383,6 +411,121 @@ export default function Show({ provider }) {
                                                             />
                                                             Tempah
                                                         </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+
+                        {/* ============ REVIEWS ============ */}
+                        <div className="rounded-2xl border border-stone-200 bg-white">
+                            <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+                                <div>
+                                    <h2 className="font-serif text-xl tracking-tight text-stone-900">
+                                        Ulasan
+                                    </h2>
+                                    <p className="mt-0.5 text-xs text-stone-500">
+                                        {reviewsCount > 0 && rating != null
+                                            ? `★ ${Number(rating).toFixed(1)} · ${reviewsCount} ulasan`
+                                            : 'Belum ada ulasan'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {reviews.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
+                                    <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600">
+                                        <Icon.StarOutline
+                                            style={{ width: 20, height: 20 }}
+                                        />
+                                    </span>
+                                    <p className="text-sm font-semibold text-stone-800">
+                                        Belum ada ulasan
+                                    </p>
+                                    <p className="max-w-xs text-xs text-stone-500">
+                                        Jadilah yang pertama berkongsi pengalaman
+                                        anda dengan tukang ini.
+                                    </p>
+                                </div>
+                            ) : (
+                                <ul className="divide-y divide-stone-200">
+                                    {reviews.map((review) => (
+                                        <li
+                                            key={review.id}
+                                            className="p-5 sm:p-6"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
+                                                    {review?.customer?.photo_path ? (
+                                                        <img
+                                                            src={`/storage/${review.customer.photo_path}`}
+                                                            alt=""
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        getReviewerInitial(review)
+                                                    )}
+                                                </span>
+
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="min-w-0">
+                                                            <p className="truncate text-sm font-bold text-stone-900">
+                                                                {getReviewerName(review)}
+                                                            </p>
+                                                            {review.created_at && (
+                                                                <p className="mt-0.5 text-[11px] text-stone-500">
+                                                                    {formatDate(
+                                                                        review.created_at
+                                                                    )}
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center gap-1">
+                                                            {[1, 2, 3, 4, 5].map(
+                                                                (n) => (
+                                                                    <span
+                                                                        key={n}
+                                                                        className={
+                                                                            n <=
+                                                                            review.rating
+                                                                                ? 'text-amber-500'
+                                                                                : 'text-stone-300'
+                                                                        }
+                                                                    >
+                                                                        {n <=
+                                                                        review.rating ? (
+                                                                            <Icon.Star
+                                                                                style={{
+                                                                                    width: 13,
+                                                                                    height: 13,
+                                                                                }}
+                                                                            />
+                                                                        ) : (
+                                                                            <Icon.StarOutline
+                                                                                style={{
+                                                                                    width: 13,
+                                                                                    height: 13,
+                                                                                }}
+                                                                            />
+                                                                        )}
+                                                                    </span>
+                                                                )
+                                                            )}
+                                                            <span className="ml-1 text-xs font-semibold text-stone-600">
+                                                                {review.rating}/5
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {review.comment && (
+                                                        <p className="mt-3 whitespace-pre-line text-sm leading-6 text-stone-700">
+                                                            {review.comment}
+                                                        </p>
                                                     )}
                                                 </div>
                                             </div>

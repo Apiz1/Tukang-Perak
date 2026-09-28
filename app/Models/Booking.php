@@ -34,4 +34,9 @@ class Booking extends Model
     {
         return $this->belongsTo(Service::class);
     }
+
+    public function review(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Review::class);
+    }
 }
