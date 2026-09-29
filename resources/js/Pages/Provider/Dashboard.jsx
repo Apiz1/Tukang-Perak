@@ -66,6 +66,23 @@ const Icon = {
             <path d="M5 5l10 10" />
         </svg>
     ),
+    /* 🆕 Wallet icon for total revenue */
+    Wallet: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M3 6.5A1.5 1.5 0 014.5 5h11A1.5 1.5 0 0117 6.5v7A1.5 1.5 0 0115.5 15h-11A1.5 1.5 0 013 13.5v-7z" />
+            <path d="M3 8h14" />
+            <circle cx="14" cy="11.5" r="1" fill="currentColor" />
+        </svg>
+    ),
+    /* 🆕 Lock icon for pending/held revenue */
+    Lock: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="4" y="9" width="12" height="8" rx="2" />
+            <path d="M7 9V6.5a3 3 0 116 0V9" />
+        </svg>
+    ),
 };
 
 /* ---------- Helpers ---------- */
@@ -396,44 +413,65 @@ export default function Dashboard({ providerProfile, stats, recentBookings = [] 
 
             {/* ---------- Stat cards (approved only) ---------- */}
             {showStats && (
-                <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatCard
-                        label="Jumlah tempahan"
-                        value={stats?.totalBookings ?? 0}
-                        hint="Sepanjang masa"
-                        icon={Icon.Calendar}
-                        accent="green"
-                    />
-                    <StatCard
-                        label="Tempahan baharu"
-                        value={stats?.pendingQuotes ?? 0}
-                        hint="Perlu tindakan"
-                        icon={Icon.Clock}
-                        accent="amber"
-                    />
-                    <StatCard
-                        label="Kerja selesai"
-                        value={stats?.completedJobs ?? 0}
-                        hint="Disahkan pelanggan"
-                        icon={Icon.Check}
-                        accent="sky"
-                    />
-                    <StatCard
-                        label="Penilaian purata"
-                        value={
-                            stats?.averageRating != null
-                                ? `★ ${Number(stats.averageRating).toFixed(1)}`
-                                : '—'
-                        }
-                        hint={
-                            stats?.reviewCount
-                                ? `Daripada ${stats.reviewCount} ulasan`
-                                : 'Belum ada ulasan'
-                        }
-                        icon={Icon.Star}
-                        accent="green"
-                    />
-                </section>
+                <>
+                    {/* 🆕 Revenue row */}
+                    <section className="grid gap-4 sm:grid-cols-2">
+                        <StatCard
+                            label="Jumlah pendapatan"
+                            value={formatCurrency(stats?.totalRevenue ?? 0)}
+                            hint="Bayaran yang telah dilepaskan"
+                            icon={Icon.Wallet}
+                            accent="green"
+                        />
+                        <StatCard
+                            label="Dalam simpanan"
+                            value={formatCurrency(stats?.pendingRevenue ?? 0)}
+                            hint="Belum dilepaskan kepada anda"
+                            icon={Icon.Lock}
+                            accent="amber"
+                        />
+                    </section>
+
+                    {/* Existing stat row */}
+                    <section className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard
+                            label="Jumlah tempahan"
+                            value={stats?.totalBookings ?? 0}
+                            hint="Sepanjang masa"
+                            icon={Icon.Calendar}
+                            accent="green"
+                        />
+                        <StatCard
+                            label="Tempahan baharu"
+                            value={stats?.pendingQuotes ?? 0}
+                            hint="Perlu tindakan"
+                            icon={Icon.Clock}
+                            accent="amber"
+                        />
+                        <StatCard
+                            label="Kerja selesai"
+                            value={stats?.completedJobs ?? 0}
+                            hint="Disahkan pelanggan"
+                            icon={Icon.Check}
+                            accent="sky"
+                        />
+                        <StatCard
+                            label="Penilaian purata"
+                            value={
+                                stats?.averageRating != null
+                                    ? `★ ${Number(stats.averageRating).toFixed(1)}`
+                                    : '—'
+                            }
+                            hint={
+                                stats?.reviewCount
+                                    ? `Daripada ${stats.reviewCount} ulasan`
+                                    : 'Belum ada ulasan'
+                            }
+                            icon={Icon.Star}
+                            accent="green"
+                        />
+                    </section>
+                </>
             )}
 
             {/* ---------- Recent bookings + Quick actions ---------- */}
@@ -633,7 +671,7 @@ export default function Dashboard({ providerProfile, stats, recentBookings = [] 
                                             href="/provider/profile"
                                             className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
                                         >
-                                            {missingFields.length === 0 ? 'Lihat profil' : 'Lengkapkan sekarang'}
+                                            {missingFields.length === 0 ? 'Lihat profil' : 'Lengkapan sekarang'}
                                             <Icon.ArrowRight style={{ width: 12, height: 12 }} />
                                         </Link>
                                     </div>

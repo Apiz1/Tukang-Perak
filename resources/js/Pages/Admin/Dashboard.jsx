@@ -57,7 +57,41 @@ const Icon = {
             <path d="M8.5 15.5a1.5 1.5 0 003 0" />
         </svg>
     ),
+    /* 🆕 Revenue icons */
+    Wallet: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M3 6.5A1.5 1.5 0 014.5 5h11A1.5 1.5 0 0117 6.5v7A1.5 1.5 0 0115.5 15h-11A1.5 1.5 0 013 13.5v-7z" />
+            <path d="M3 8h14" />
+            <circle cx="14" cy="11.5" r="1" fill="currentColor" />
+        </svg>
+    ),
+    TrendingUp: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M3 14l4-4 3 3 6-6" />
+            <path d="M12 7h4v4" />
+        </svg>
+    ),
+    Lock: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="4" y="9" width="12" height="8" rx="2" />
+            <path d="M7 9V6.5a3 3 0 116 0V9" />
+        </svg>
+    ),
 };
+
+/* ---------- Currency helper ---------- */
+const formatCurrency = (value) =>
+    value == null
+        ? 'RM0'
+        : new Intl.NumberFormat('ms-MY', {
+              style: 'currency',
+              currency: 'MYR',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+          }).format(value);
 
 /* ---------- Stat card ---------- */
 function StatCard({ label, value, hint, icon: Ico, accent = 'green' }) {
@@ -71,7 +105,7 @@ function StatCard({ label, value, hint, icon: Ico, accent = 'green' }) {
     return (
         <div className="admin-stat">
             <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                     <p className="admin-stat__label">{label}</p>
                     <p className="admin-stat__value">{value}</p>
                     {hint && (
@@ -171,8 +205,33 @@ export default function Dashboard({ stats, recentActivity = [] }) {
                 </p>
             </div>
 
-            {/* ---------- Stat cards ---------- */}
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* ---------- 🆕 Revenue stat cards ---------- */}
+            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <StatCard
+                    label="Pendapatan platform"
+                    value={formatCurrency(stats?.platformRevenue ?? 0)}
+                    hint="Yuran yang dikutip"
+                    icon={Icon.Wallet}
+                    accent="green"
+                />
+                <StatCard
+                    label="Nilai diproses (GMV)"
+                    value={formatCurrency(stats?.totalGmv ?? 0)}
+                    hint="Jumlah nilai transaksi"
+                    icon={Icon.TrendingUp}
+                    accent="sky"
+                />
+                <StatCard
+                    label="Dalam simpanan (escrow)"
+                    value={formatCurrency(stats?.heldInEscrow ?? 0)}
+                    hint="Bayaran belum dilepaskan"
+                    icon={Icon.Lock}
+                    accent="amber"
+                />
+            </section>
+
+            {/* ---------- Platform stat cards ---------- */}
+            <section className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     label="Tukang menunggu"
                     value={pendingProviders}
@@ -297,6 +356,14 @@ export default function Dashboard({ stats, recentActivity = [] }) {
                                 subtitle="Pantau semua tempahan aktif"
                                 icon={Icon.Calendar}
                                 accent="lime"
+                            />
+                            {/* 🆕 Payments quick action */}
+                            <ActionRow
+                                href="/admin/payments"
+                                title="Urus bayaran"
+                                subtitle="Selesaikan pertikaian dan lepaskan bayaran"
+                                icon={Icon.Wallet}
+                                accent="amber"
                             />
                         </div>
                     </div>

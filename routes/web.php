@@ -75,8 +75,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'totalProviders' => \App\Models\ProviderProfile::where('status', 'approved')->count(),
                 'totalCustomers' => \App\Models\User::where('role', 'customer')->count(),
                 'totalBookings' => \App\Models\Booking::count(),
+                'platformRevenue' => \App\Models\Payment::where('status', 'released')->sum('platform_fee'),
+                'totalGmv' => \App\Models\Payment::where('status', 'released')->sum('amount'),
+                'heldInEscrow' => \App\Models\Payment::where('status', 'held')->sum('amount'),
             ],
-        ]); 
+        ]);
     })->name('dashboard');
 
     Route::get('/providers', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'index'])
