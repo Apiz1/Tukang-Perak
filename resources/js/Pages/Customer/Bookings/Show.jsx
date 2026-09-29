@@ -105,6 +105,20 @@ const Icon = {
             <path d="M10 3l1.5 4.5L16 9l-4.5 1.5L10 15l-1.5-4.5L4 9l4.5-1.5L10 3z" />
         </svg>
     ),
+    Card: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="2.5" y="5" width="15" height="10" rx="2" />
+            <path d="M2.5 9h15" />
+        </svg>
+    ),
+    /* 🆕 Hourglass for work_done state */
+    Hourglass: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M6 3h8M6 17h8M7 3v3.5c0 1.5 3 2 3 3.5s-3 2-3 3.5V17M13 3v3.5c0 1.5-3 2-3 3.5s3 2 3 3.5V17" />
+        </svg>
+    ),
 };
 
 /* ---------- Static label maps ---------- */
@@ -135,11 +149,24 @@ const statusConfig = {
         icon: Icon.Clock,
         hint: 'Kerja sedang dijalankan.',
     },
+    /* 🆕 New status */
+    work_done: {
+        label: 'Kerja siap — perlu pengesahan',
+        cls: 'border-violet-200 bg-violet-50 text-violet-800',
+        icon: Icon.Hourglass,
+        hint: 'Tukang telah menandakan kerja siap. Sahkan untuk melepaskan bayaran.',
+    },
     completed: {
         label: 'Selesai',
         cls: 'border-emerald-200 bg-emerald-50 text-emerald-800',
         icon: Icon.Check,
         hint: 'Kerja telah selesai. Tinggalkan ulasan anda di bawah.',
+    },
+    disputed: {
+        label: 'Dalam pertikaian',
+        cls: 'border-rose-200 bg-rose-50 text-rose-800',
+        icon: Icon.Alert,
+        hint: 'Pertikaian anda sedang disemak oleh pasukan kami.',
     },
     cancelled: {
         label: 'Dibatalkan',
@@ -304,12 +331,30 @@ export default function Show({ booking }) {
     const [cancelling, setCancelling] = useState(false);
     const [toast, setToast] = useState(null);
 
+    /* 🆕 Dispute state */
+    const [showDispute, setShowDispute] = useState(false);
+
     const providerName = getProviderName(booking);
     const providerPhoto = getProviderPhoto(booking);
 
     const canCancel = booking.status === 'requested';
     const hasReview = Boolean(booking.review);
     const canReview = booking.status === 'completed' && !hasReview;
+
+    /* Payment state */
+    const paymentStatus = booking.payment?.status ?? null;
+    const isHourly = booking.service?.price_type === 'hourly';
+    const canPay =
+        booking.status === 'accepted' &&
+        (!booking.payment || paymentStatus === 'pending') &&
+        !isHourly;
+    const isHeld = paymentStatus === 'held';
+    const isReleased = paymentStatus === 'released';
+
+    /* 🆕 Confirmation / dispute state */
+    const canConfirm =
+        booking.status === 'work_done' && paymentStatus === 'held';
+    const isDisputed = booking.status === 'disputed';
 
     /* ---------- Review form ---------- */
     const {
@@ -323,6 +368,9 @@ export default function Show({ booking }) {
         rating: 5,
         comment: '',
     });
+
+    /* 🆕 Dispute form */
+    const disputeForm = useForm({ reason: '' });
 
     /* Show toast when Laravel flashes a success message */
     useEffect(() => {
@@ -359,6 +407,36 @@ export default function Show({ booking }) {
                 },
             }
         );
+    };
+
+    /* Payment flow */
+    const handlePay = () => {
+        router.post(route('customer.bookings.pay', booking.id));
+    };
+
+    /* 🆕 Confirm job done → releases payment */
+    const handleConfirm = () => {
+        if (
+            !confirm(
+                'Sahkan kerja telah siap? Bayaran akan dilepaskan kepada tukang.'
+            )
+        )
+            return;
+        router.patch(route('customer.bookings.confirm', booking.id), {}, {
+            preserveScroll: true,
+        });
+    };
+
+    /* 🆕 Dispute submission */
+    const submitDispute = (e) => {
+        e.preventDefault();
+        disputeForm.post(route('customer.bookings.dispute', booking.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                disputeForm.reset();
+                setShowDispute(false);
+            },
+        });
     };
 
     return (
@@ -661,6 +739,249 @@ export default function Show({ booking }) {
 
                     {/* RIGHT: sidebar */}
                     <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
+                        {/* ---------- Payment card ---------- */}
+                        {canPay && (
+                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-700 text-white">
+                                        <Icon.Card style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-emerald-900">
+                                            Bayaran diperlukan
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-5 text-emerald-800/90">
+                                            Tukang telah menerima tempahan anda.
+                                            Selesaikan bayaran untuk mengesahkan.
+                                        </p>
+
+                                        <button
+                                            type="button"
+                                            onClick={handlePay}
+                                            className="group mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md"
+                                        >
+                                            Bayar {formatCurrency(booking.price)} sekarang
+                                            <Icon.ArrowRight
+                                                className="transition-transform group-hover:translate-x-0.5"
+                                                style={{ width: 14, height: 14 }}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Hourly service notice */}
+                        {booking.status === 'accepted' &&
+                            (!booking.payment || paymentStatus === 'pending') &&
+                            isHourly && (
+                                <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+                                    <div className="flex items-start gap-3">
+                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700">
+                                            <Icon.Info style={{ width: 16, height: 16 }} />
+                                        </span>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold text-amber-900">
+                                                Bayaran dalam talian belum tersedia
+                                            </p>
+                                            <p className="mt-0.5 text-xs leading-5 text-amber-800/90">
+                                                Untuk perkhidmatan mengikut jam,
+                                                sila hubungi tukang untuk
+                                                urusan bayaran.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                        {/* Payment held confirmation */}
+                        {isHeld && !canConfirm && (
+                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-700 text-white">
+                                        <Icon.Shield style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-emerald-900">
+                                            Bayaran diterima
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-5 text-emerald-800/90">
+                                            Wang anda disimpan dengan selamat
+                                            sehingga kerja selesai.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 🆕 ---------- Confirm / Dispute card ---------- */}
+                        {canConfirm && !showDispute && (
+                            <div className="rounded-2xl border border-violet-200 bg-violet-50/60 p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-violet-600 text-white">
+                                        <Icon.Hourglass style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-violet-900">
+                                            Tukang kata kerja siap
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-5 text-violet-800/90">
+                                            Sahkan kerja telah selesai untuk
+                                            melepaskan bayaran, atau laporkan
+                                            masalah jika ada.
+                                        </p>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleConfirm}
+                                            className="group mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 hover:shadow-md"
+                                        >
+                                            <Icon.Check style={{ width: 14, height: 14 }} />
+                                            Sahkan kerja siap
+                                            <Icon.ArrowRight
+                                                className="transition-transform group-hover:translate-x-0.5"
+                                                style={{ width: 14, height: 14 }}
+                                            />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDispute(true)}
+                                            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-xs font-bold text-rose-700 transition hover:bg-rose-50"
+                                        >
+                                            <Icon.Alert style={{ width: 12, height: 12 }} />
+                                            Laporkan masalah
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 🆕 ---------- Dispute form ---------- */}
+                        {canConfirm && showDispute && (
+                            <form
+                                onSubmit={submitDispute}
+                                className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-rose-600 text-white">
+                                        <Icon.Alert style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-rose-900">
+                                            Laporkan masalah
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-5 text-rose-800/90">
+                                            Terangkan apa yang tidak kena.
+                                            Bayaran akan ditahan sehingga
+                                            siasatan selesai.
+                                        </p>
+
+                                        <label
+                                            htmlFor="dispute-reason"
+                                            className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-rose-700"
+                                        >
+                                            Sebab pertikaian
+                                        </label>
+                                        <textarea
+                                            id="dispute-reason"
+                                            value={disputeForm.data.reason}
+                                            onChange={(e) =>
+                                                disputeForm.setData(
+                                                    'reason',
+                                                    e.target.value
+                                                )
+                                            }
+                                            rows={3}
+                                            required
+                                            placeholder="Contoh: Kerja tidak disiapkan sepenuhnya, atau hasil tidak seperti yang dipersetujui."
+                                            className="mt-1.5 w-full resize-none rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm leading-6 text-stone-800 placeholder-stone-400 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-400/15"
+                                        />
+                                        {disputeForm.errors.reason && (
+                                            <p className="mt-2 text-xs font-semibold text-rose-700">
+                                                {disputeForm.errors.reason}
+                                            </p>
+                                        )}
+
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <button
+                                                type="submit"
+                                                disabled={disputeForm.processing}
+                                                className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                {disputeForm.processing ? (
+                                                    <>
+                                                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                                        Menghantar...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Hantar pertikaian
+                                                        <Icon.ArrowRight
+                                                            style={{ width: 12, height: 12 }}
+                                                        />
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    disputeForm.reset();
+                                                    setShowDispute(false);
+                                                }}
+                                                disabled={disputeForm.processing}
+                                                className="rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
+                                            >
+                                                Batal
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* 🆕 Disputed notice */}
+                        {isDisputed && (
+                            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-rose-600 text-white">
+                                        <Icon.Alert style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-rose-900">
+                                            Pertikaian sedang disemak
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-5 text-rose-800/90">
+                                            Pasukan sokongan kami akan menghubungi
+                                            anda tidak lama lagi. Bayaran ditahan
+                                            sementara menunggu keputusan.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 🆕 Payment released confirmation */}
+                        {isReleased && (
+                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-700 text-white">
+                                        <Icon.Check style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-emerald-900">
+                                            Bayaran telah dilepaskan
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-5 text-emerald-800/90">
+                                            Kerja selesai. Terima kasih kerana
+                                            menggunakan Tukang Perak!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Contact card */}
                         {(booking.provider_profile?.user?.email ||
                             booking.provider_profile?.user?.phone_number) && (

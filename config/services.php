@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+        'billplz' => [
+        'key' => env('BILLPLZ_API_KEY'),
+        'collection_id' => env('BILLPLZ_COLLECTION_ID'),
+        'x_signature_key' => env('BILLPLZ_X_SIGNATURE_KEY'),
+        'sandbox' => env('BILLPLZ_SANDBOX', true),
+        'callback_url' => env('BILLPLZ_CALLBACK_URL'),
+    ],
+
+    'marketplace' => [
+        'platform_fee_percent' => env('PLATFORM_FEE_PERCENT', 0),
+    ],
+
 ];

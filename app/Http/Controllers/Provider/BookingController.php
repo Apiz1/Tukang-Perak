@@ -14,7 +14,7 @@ class BookingController extends Controller
     {
         return Inertia::render('Provider/Bookings/Index', [
             'bookings' => auth()->user()->providerProfile->bookings()
-                ->with(['service', 'customer'])
+                ->with(['service', 'customer', 'payment'])
                 ->latest()
                 ->get(),
         ]);
@@ -40,14 +40,15 @@ class BookingController extends Controller
         return back()->with('success', 'Booking declined.');
     }
 
-    public function complete(Booking $booking): RedirectResponse
+    public function markWorkDone(Booking $booking): RedirectResponse
     {
         $this->authorizeOwnership($booking);
         abort_unless($booking->status === 'accepted', 403);
+        abort_unless($booking->payment?->status === 'held', 403, 'The customer has not paid yet.');
 
-        $booking->update(['status' => 'completed']);
+        $booking->update(['status' => 'work_done']);
 
-        return back()->with('success', 'Booking marked as completed.');
+        return back()->with('success', 'Marked as done. Waiting for customer confirmation.');
     }
 
     private function authorizeOwnership(Booking $booking): void
@@ -55,5 +56,14 @@ class BookingController extends Controller
         if ($booking->provider_profile_id !== auth()->user()->providerProfile->id) {
             abort(403);
         }
+    }
+
+    public function show(Booking $booking): Response
+    {
+        $this->authorizeOwnership($booking);
+
+        return Inertia::render('Provider/Bookings/Show', [
+            'booking' => $booking->load(['service', 'customer', 'payment', 'review']),
+        ]);
     }
 }

@@ -15,6 +15,8 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/providers/{providerProfile}', [BrowseController::class, 'show'])->name('providers.show');
 
+Route::post('/billplz/callback', \App\Http\Controllers\BillplzCallbackController::class)->name('billplz.callback');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard.redirect');
     Route::get('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'create'])->name('services.book');
@@ -26,8 +28,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bookings', [\App\Http\Controllers\Customer\BookingController::class, 'index'])->name('bookings.index');
         Route::get('/bookings/{booking}', [\App\Http\Controllers\Customer\BookingController::class, 'show'])->name('bookings.show');
         Route::patch('/bookings/{booking}/cancel', [\App\Http\Controllers\Customer\BookingController::class, 'cancel'])->name('bookings.cancel');
-
         Route::post('/bookings/{booking}/review', [\App\Http\Controllers\Customer\ReviewController::class, 'store'])->name('bookings.review');
+
+        Route::post('/bookings/{booking}/pay', [\App\Http\Controllers\Customer\PaymentController::class, 'store'])->name('bookings.pay');
+        Route::get('/payments/return', [\App\Http\Controllers\Customer\PaymentController::class, 'return'])->name('payments.return');
+
+        Route::patch('/bookings/{booking}/confirm', [\App\Http\Controllers\Customer\BookingController::class, 'confirm'])->name('bookings.confirm');
+        Route::post('/bookings/{booking}/dispute', [\App\Http\Controllers\Customer\BookingController::class, 'dispute'])->name('bookings.dispute');
     });
 
    Route::middleware('role:provider')->prefix('provider')->name('provider.')->group(function () {
@@ -51,7 +58,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/bookings', [\App\Http\Controllers\Provider\BookingController::class, 'index'])->name('bookings.index');
         Route::patch('/bookings/{booking}/accept', [\App\Http\Controllers\Provider\BookingController::class, 'accept'])->name('bookings.accept');
         Route::patch('/bookings/{booking}/decline', [\App\Http\Controllers\Provider\BookingController::class, 'decline'])->name('bookings.decline');
-        Route::patch('/bookings/{booking}/complete', [\App\Http\Controllers\Provider\BookingController::class, 'complete'])->name('bookings.complete');
+        Route::patch('/bookings/{booking}/mark-work-done', [\App\Http\Controllers\Provider\BookingController::class, 'markWorkDone'])->name('bookings.mark-work-done');
+        Route::get('/bookings/{booking}', [\App\Http\Controllers\Provider\BookingController::class, 'show'])->name('bookings.show');
 
         Route::get('/reviews', [\App\Http\Controllers\Provider\ReviewController::class, 'index'])->name('reviews.index');
         Route::patch('/reviews/{review}/reply', [\App\Http\Controllers\Provider\ReviewController::class, 'reply'])->name('reviews.reply');
@@ -86,6 +94,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/{booking}', [\App\Http\Controllers\Admin\BookingController::class, 'show'])->name('bookings.show');
+
+    Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
+    Route::patch('/payments/{payment}/release', [\App\Http\Controllers\Admin\PaymentController::class, 'release'])->name('payments.release');
+    Route::patch('/payments/{payment}/refund', [\App\Http\Controllers\Admin\PaymentController::class, 'refund'])->name('payments.refund');
     });
 });
 

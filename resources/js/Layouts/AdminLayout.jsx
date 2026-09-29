@@ -30,7 +30,7 @@ const Icon = {
             <path d="M14 17c0-1.9-.6-3.2-1.6-4.1 2.6-.3 5 1.3 5 4.1" />
         </svg>
     ),
-    User: (p) => (                                            // 👈 ADD THIS
+    User: (p) => (
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
             <circle cx="10" cy="7" r="3" />
@@ -48,6 +48,14 @@ const Icon = {
              strokeLinecap="round" strokeLinejoin="round" {...p}>
             <rect x="3" y="4" width="14" height="13" rx="2" />
             <path d="M3 8h14M7 2v4M13 2v4" />
+        </svg>
+    ),
+    /* 🆕 Card / payments icon */
+    Card: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="2.5" y="5" width="15" height="10" rx="2" />
+            <path d="M2.5 9h15" />
         </svg>
     ),
     Bell: (p) => (
@@ -78,8 +86,8 @@ const navSections = [
     {
         label: 'Utama',
         items: [
-            { label: 'Papan pemuka', href: '/admin/dashboard',                 icon: 'Home' },
-            { label: 'Tempahan',     href: '/admin/bookings',        icon: 'Calendar' },
+            { label: 'Papan pemuka', href: '/admin/dashboard', icon: 'Home' },
+            { label: 'Tempahan',     href: '/admin/bookings',  icon: 'Calendar' },
         ],
     },
     {
@@ -87,6 +95,8 @@ const navSections = [
         items: [
             { label: 'Tukang',   href: '/admin/providers', icon: 'Wrench' },
             { label: 'Pelanggan', href: '/admin/customers', icon: 'Users' },
+            /* 🆕 Payments — sits after Pelanggan */
+            { label: 'Bayaran',  href: '/admin/payments',  icon: 'Card' },
         ],
     },
 ];

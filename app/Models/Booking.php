@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['customer_id', 'provider_profile_id', 'service_id', 'preferred_date', 'district', 'address', 'notes', 'price', 'status'])]
 class Booking extends Model
@@ -38,5 +40,15 @@ class Booking extends Model
     public function review(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Review::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
     }
 }

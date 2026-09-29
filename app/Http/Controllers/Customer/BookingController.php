@@ -65,7 +65,7 @@ class BookingController extends Controller
         abort_unless($booking->customer_id === auth()->id(), 403);
 
        return Inertia::render('Customer/Bookings/Show', [
-            'booking' => $booking->load(['service', 'providerProfile.user', 'review']),
+            'booking' => $booking->load(['service', 'providerProfile.user', 'review', 'payment']),
         ]);
     }
 
@@ -77,5 +77,32 @@ class BookingController extends Controller
         $booking->update(['status' => 'cancelled']);
 
         return back()->with('success', 'Booking cancelled.');
+    }
+
+    public function confirm(Booking $booking): RedirectResponse
+    {
+        abort_unless($booking->customer_id === auth()->id(), 403);
+        abort_unless($booking->status === 'work_done', 403);
+        abort_unless($booking->payment?->status === 'held', 403);
+
+        $booking->update(['status' => 'completed']);
+        $booking->payment->markAsReleased();
+
+        return back()->with('success', 'Thanks for confirming! Payment has been released to the provider.');
+    }
+
+    public function dispute(Request $request, Booking $booking): RedirectResponse
+    {
+        abort_unless($booking->customer_id === auth()->id(), 403);
+        abort_unless($booking->status === 'work_done', 403);
+        abort_unless($booking->payment?->status === 'held', 403);
+
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $booking->payment->markAsDisputed($request->reason);
+
+        return back()->with('success', 'Your report has been sent to our team for review.');
     }
 }

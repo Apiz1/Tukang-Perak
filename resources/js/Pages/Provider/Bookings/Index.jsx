@@ -88,6 +88,18 @@ const Icon = {
             <path d="M3 10h4l1 2h4l1-2h4" />
         </svg>
     ),
+    Shield: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M10 2l6 2.5v5c0 3.6-2.6 6.5-6 8-3.4-1.5-6-4.4-6-8v-5L10 2z" />
+        </svg>
+    ),
+    Hourglass: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M6 3h8M6 17h8M7 3v3.5c0 1.5 3 2 3 3.5s-3 2-3 3.5V17M13 3v3.5c0 1.5-3 2-3 3.5s3 2 3 3.5V17" />
+        </svg>
+    ),
 };
 
 /* ---------- Status config ---------- */
@@ -101,6 +113,11 @@ const statusConfig = {
         label: 'Diterima',
         cls: 'border-sky-200 bg-sky-50 text-sky-700',
         icon: Icon.Check,
+    },
+    work_done: {
+        label: 'Kerja siap',
+        cls: 'border-violet-200 bg-violet-50 text-violet-700',
+        icon: Icon.Hourglass,
     },
     completed: {
         label: 'Selesai',
@@ -173,7 +190,7 @@ export default function Index({ bookings = [] }) {
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
-    /* Modal state — { type: 'accept' | 'decline' | 'complete', booking: {...} } */
+    /* Modal state — { type: 'accept' | 'decline' | 'markWorkDone', booking: {...} } */
     const [confirmAction, setConfirmAction] = useState(null);
     const [processing, setProcessing] = useState(false);
 
@@ -198,6 +215,9 @@ export default function Index({ bookings = [] }) {
             total:     rows.length,
             requested: rows.filter((b) => b.status === 'requested').length,
             accepted:  rows.filter((b) => b.status === 'accepted').length,
+            inFlight:  rows.filter(
+                (b) => b.status === 'accepted' || b.status === 'work_done'
+            ).length,
             completed: rows.filter((b) => b.status === 'completed').length,
         }),
         [rows]
@@ -216,9 +236,9 @@ export default function Index({ bookings = [] }) {
         const { type, booking } = confirmAction;
 
         const urls = {
-            accept:   route('provider.bookings.accept', booking.id),
-            decline:  route('provider.bookings.decline', booking.id),
-            complete: route('provider.bookings.complete', booking.id),
+            accept:       route('provider.bookings.accept', booking.id),
+            decline:      route('provider.bookings.decline', booking.id),
+            markWorkDone: route('provider.bookings.mark-work-done', booking.id),
         };
 
         setProcessing(true);
@@ -265,17 +285,17 @@ export default function Index({ bookings = [] }) {
                         </p>
                     </div>
                     <div className="provider-stat">
-                        <p className="provider-stat__label">Diterima</p>
-                        <p className="provider-stat__value">{counts.accepted}</p>
+                        <p className="provider-stat__label">Sedang berjalan</p>
+                        <p className="provider-stat__value">{counts.inFlight}</p>
                         <p className="mt-1 text-xs text-[color:var(--muted)]">
-                            Sedang berjalan
+                            Diterima atau siap
                         </p>
                     </div>
                     <div className="provider-stat">
                         <p className="provider-stat__label">Selesai</p>
                         <p className="provider-stat__value">{counts.completed}</p>
                         <p className="mt-1 text-xs text-[color:var(--muted)]">
-                            Sepanjang masa
+                            Disahkan pelanggan
                         </p>
                     </div>
                 </section>
@@ -310,6 +330,7 @@ export default function Index({ bookings = [] }) {
                                 { value: 'all',       label: 'Semua' },
                                 { value: 'requested', label: 'Menunggu' },
                                 { value: 'accepted',  label: 'Diterima' },
+                                { value: 'work_done', label: 'Kerja siap' },
                                 { value: 'completed', label: 'Selesai' },
                             ].map((tab) => {
                                 const active = statusFilter === tab.value;
@@ -404,11 +425,17 @@ function BookingCard({ booking, onAsk, processing }) {
 
     const canAccept = status === 'requested';
     const canDecline = status === 'requested';
-    const canComplete = status === 'accepted';
+    const canMarkWorkDone = status === 'accepted';
+    const isWorkDone = status === 'work_done';
+    const paymentHeld = booking.payment?.status === 'held';
 
     return (
         <article className="provider-card overflow-hidden">
-            <div className="p-5 sm:p-6">
+            {/* ✅ Clickable header that navigates to the show page */}
+            <Link
+                href={route('provider.bookings.show', booking.id)}
+                className="group block p-5 transition hover:bg-[color:var(--paper)]/40 sm:p-6"
+            >
                 {/* Top row: customer + status */}
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-start gap-4">
@@ -425,7 +452,7 @@ function BookingCard({ booking, onAsk, processing }) {
                         </span>
 
                         <div className="min-w-0">
-                            <h3 className="truncate text-base font-bold text-[color:var(--ink)]">
+                            <h3 className="truncate text-base font-bold text-[color:var(--ink)] transition group-hover:text-[color:var(--green)]">
                                 {booking.service?.title ?? 'Tempahan'}
                             </h3>
                             <p className="mt-0.5 truncate text-sm text-[color:var(--muted)]">
@@ -473,13 +500,44 @@ function BookingCard({ booking, onAsk, processing }) {
                         </div>
                     )}
                 </dl>
-            </div>
+
+                {/* ✅ "View details" hint */}
+                <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[color:var(--green)] transition group-hover:translate-x-0.5">
+                    Lihat butiran penuh
+                    <Icon.ArrowRight style={{ width: 12, height: 12 }} />
+                </div>
+            </Link>
 
             {/* Footer with actions */}
             <div className="flex flex-col gap-3 border-t border-[color:var(--line)] bg-[color:var(--paper)]/40 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-sm font-bold text-[color:var(--green-dark)]">
-                    {formatCurrency(booking.price)}
-                </span>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-[color:var(--green-dark)]">
+                        {formatCurrency(booking.price)}
+                    </span>
+
+                    {/* Payment status pill */}
+                    {(status === 'accepted' || status === 'work_done') && (
+                        <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                                paymentHeld
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : 'border-amber-200 bg-amber-50 text-amber-700'
+                            }`}
+                        >
+                            {paymentHeld ? (
+                                <>
+                                    <Icon.Shield style={{ width: 10, height: 10 }} />
+                                    Bayaran disimpan
+                                </>
+                            ) : (
+                                <>
+                                    <Icon.Clock style={{ width: 10, height: 10 }} />
+                                    Belum bayar
+                                </>
+                            )}
+                        </span>
+                    )}
+                </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                     {booking.customer?.phone_number && (
@@ -516,16 +574,31 @@ function BookingCard({ booking, onAsk, processing }) {
                         </button>
                     )}
 
-                    {canComplete && (
-                        <button
-                            type="button"
-                            disabled={processing}
-                            onClick={() => onAsk('complete', booking)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--green)] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[color:var(--green-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            <Icon.Check style={{ width: 12, height: 12 }} />
-                            Tanda selesai
-                        </button>
+                    {/* Mark work done — gated on payment held */}
+                    {canMarkWorkDone &&
+                        (paymentHeld ? (
+                            <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => onAsk('markWorkDone', booking)}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--green)] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[color:var(--green-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <Icon.Check style={{ width: 12, height: 12 }} />
+                                Tanda kerja siap
+                            </button>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-700">
+                                <Icon.Clock style={{ width: 12, height: 12 }} />
+                                Menunggu bayaran pelanggan
+                            </span>
+                        ))}
+
+                    {/* Work done — waiting for customer confirmation */}
+                    {isWorkDone && (
+                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3.5 py-2 text-xs font-bold text-violet-700">
+                            <Icon.Hourglass style={{ width: 12, height: 12 }} />
+                            Menunggu pengesahan pelanggan
+                        </span>
                     )}
                 </div>
             </div>
@@ -577,26 +650,31 @@ function ConfirmModal({ action, processing, onCancel, onConfirm }) {
                 'Pelanggan akan dimaklumkan bahawa tempahan ini tidak dapat diterima.',
             confirmLabel: 'Ya, tolak',
         },
-        complete: {
-            tone: 'emerald',
-            icon: <Icon.Check style={{ width: 26, height: 26 }} />,
-            title: 'Tanda selesai?',
+        markWorkDone: {
+            tone: 'violet',
+            icon: <Icon.Hourglass style={{ width: 26, height: 26 }} />,
+            title: 'Tanda kerja siap?',
             message:
-                'Kerja akan ditandakan sebagai selesai. Pastikan pelanggan telah menerima perkhidmatan.',
-            confirmLabel: 'Ya, tanda selesai',
+                'Pelanggan akan diminta mengesahkan kerja anda. Bayaran akan dilepaskan selepas pengesahan.',
+            confirmLabel: 'Ya, tanda siap',
         },
     }[type];
 
     const toneClasses =
-        config.tone === 'emerald'
+        config.tone === 'rose'
             ? {
+                  iconWrap: 'bg-rose-50 text-rose-700',
+                  confirmBtn: 'bg-rose-600 hover:bg-rose-700 text-white',
+              }
+            : config.tone === 'violet'
+            ? {
+                  iconWrap: 'bg-violet-50 text-violet-700',
+                  confirmBtn: 'bg-violet-600 hover:bg-violet-700 text-white',
+              }
+            : {
                   iconWrap: 'bg-emerald-50 text-emerald-700',
                   confirmBtn:
                       'bg-[color:var(--green)] hover:bg-[color:var(--green-dark)] text-white',
-              }
-            : {
-                  iconWrap: 'bg-rose-50 text-rose-700',
-                  confirmBtn: 'bg-rose-600 hover:bg-rose-700 text-white',
               };
 
     return (
