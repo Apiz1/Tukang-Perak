@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import ProviderLayout from '@/Layouts/ProviderLayout';
+import ChatBox from '@/Components/ChatBox';
 
 /* ---------- Small icons ---------- */
 const Icon = {
@@ -103,6 +104,12 @@ const Icon = {
              strokeLinecap="round" strokeLinejoin="round" {...p}>
             <rect x="2.5" y="5" width="15" height="10" rx="2" />
             <path d="M2.5 9h15" />
+        </svg>
+    ),
+    Chat: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M3 5.5A2.5 2.5 0 015.5 3h9A2.5 2.5 0 0117 5.5v6a2.5 2.5 0 01-2.5 2.5H8l-5 3.5V5.5z" />
         </svg>
     ),
 };
@@ -222,6 +229,23 @@ export default function Show({ booking }) {
     const canDecline = status === 'requested';
     const canMarkWorkDone = status === 'accepted' && paymentHeld;
 
+    /* 🆕 Dynamic status hint — changes once payment is held */
+    const statusHint =
+        status === 'accepted' && paymentHeld
+            ? 'Pelanggan telah membuat pembayaran. Anda boleh mula bekerja.'
+            : config.hint;
+
+    /* 🆕 Dynamic status label — show a sub-state for paid-and-accepted */
+    const statusLabel =
+        status === 'accepted' && paymentHeld
+            ? 'Telah Membuat Pembayaran'
+            : config.label;
+
+    /* Chat visibility — once accepted, both parties can chat */
+    const canChat = ['accepted', 'work_done', 'completed', 'disputed'].includes(
+        status
+    );
+
     const act = (url) => {
         setProcessing(true);
         router.patch(url, {}, {
@@ -259,9 +283,9 @@ export default function Show({ booking }) {
                     <StatusIcon style={{ width: 18, height: 18 }} />
                 </span>
                 <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold">{config.label}</p>
+                    <p className="text-sm font-bold">{statusLabel}</p>
                     <p className="mt-0.5 text-xs leading-5 opacity-90">
-                        {config.hint}
+                        {statusHint}
                     </p>
                 </div>
             </div>
@@ -401,6 +425,31 @@ export default function Show({ booking }) {
                             </div>
                         </div>
                     </div>
+
+                    {/* Messages / Chat */}
+                    {canChat && (
+                        <div className="provider-card">
+                            <div className="border-b border-[color:var(--line)] px-5 py-4 sm:px-6">
+                                <div className="flex items-center gap-3">
+                                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-[color:var(--lime)] text-[color:var(--green-dark)]">
+                                        <Icon.Chat style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div>
+                                        <h2 className="text-sm font-bold text-[color:var(--ink)]">
+                                            Mesej
+                                        </h2>
+                                        <p className="mt-0.5 text-xs text-[color:var(--muted)]">
+                                            Berbual dengan {customerName} tentang kerja ini
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-5 sm:p-6">
+                                <ChatBox booking={booking} />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Customer review (if present) */}
                     {booking.review && (

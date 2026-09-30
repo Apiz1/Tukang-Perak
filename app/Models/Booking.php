@@ -51,4 +51,9 @@ class Booking extends Model
     {
         return $this->hasOne(Payment::class)->latestOfMany();
     }
+
+    public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Message::class)->orderBy('created_at');
+    }
 }

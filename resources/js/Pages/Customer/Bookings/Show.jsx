@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
+import ChatBox from '@/Components/ChatBox';
 
 /* ---------- Small icons ---------- */
 const Icon = {
@@ -112,11 +113,17 @@ const Icon = {
             <path d="M2.5 9h15" />
         </svg>
     ),
-    /* 🆕 Hourglass for work_done state */
     Hourglass: (p) => (
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
             <path d="M6 3h8M6 17h8M7 3v3.5c0 1.5 3 2 3 3.5s-3 2-3 3.5V17M13 3v3.5c0 1.5-3 2-3 3.5s3 2 3 3.5V17" />
+        </svg>
+    ),
+    /* 🆕 Chat icon */
+    Chat: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M3 5.5A2.5 2.5 0 015.5 3h9A2.5 2.5 0 0117 5.5v6a2.5 2.5 0 01-2.5 2.5H8l-5 3.5V5.5z" />
         </svg>
     ),
 };
@@ -149,7 +156,6 @@ const statusConfig = {
         icon: Icon.Clock,
         hint: 'Kerja sedang dijalankan.',
     },
-    /* 🆕 New status */
     work_done: {
         label: 'Kerja siap — perlu pengesahan',
         cls: 'border-violet-200 bg-violet-50 text-violet-800',
@@ -331,7 +337,6 @@ export default function Show({ booking }) {
     const [cancelling, setCancelling] = useState(false);
     const [toast, setToast] = useState(null);
 
-    /* 🆕 Dispute state */
     const [showDispute, setShowDispute] = useState(false);
 
     const providerName = getProviderName(booking);
@@ -351,10 +356,15 @@ export default function Show({ booking }) {
     const isHeld = paymentStatus === 'held';
     const isReleased = paymentStatus === 'released';
 
-    /* 🆕 Confirmation / dispute state */
+    /* Confirmation / dispute state */
     const canConfirm =
         booking.status === 'work_done' && paymentStatus === 'held';
     const isDisputed = booking.status === 'disputed';
+
+    /* 🆕 Chat visibility — only show once the provider has accepted */
+    const canChat = ['accepted', 'work_done', 'completed', 'disputed'].includes(
+        booking.status
+    );
 
     /* ---------- Review form ---------- */
     const {
@@ -369,7 +379,7 @@ export default function Show({ booking }) {
         comment: '',
     });
 
-    /* 🆕 Dispute form */
+    /* Dispute form */
     const disputeForm = useForm({ reason: '' });
 
     /* Show toast when Laravel flashes a success message */
@@ -414,7 +424,7 @@ export default function Show({ booking }) {
         router.post(route('customer.bookings.pay', booking.id));
     };
 
-    /* 🆕 Confirm job done → releases payment */
+    /* Confirm job done → releases payment */
     const handleConfirm = () => {
         if (
             !confirm(
@@ -427,7 +437,7 @@ export default function Show({ booking }) {
         });
     };
 
-    /* 🆕 Dispute submission */
+    /* Dispute submission */
     const submitDispute = (e) => {
         e.preventDefault();
         disputeForm.post(route('customer.bookings.dispute', booking.id), {
@@ -617,6 +627,31 @@ export default function Show({ booking }) {
                                     Lihat profil tukang
                                     <Icon.ArrowRight style={{ width: 12, height: 12 }} />
                                 </Link>
+                            </div>
+                        )}
+
+                        {/* 🆕 ---------- Messages / Chat ---------- */}
+                        {canChat && (
+                            <div className="rounded-2xl border border-stone-200 bg-white">
+                                <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4 sm:px-6">
+                                    <div className="flex items-center gap-3">
+                                        <span className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-50 text-emerald-700">
+                                            <Icon.Chat style={{ width: 16, height: 16 }} />
+                                        </span>
+                                        <div>
+                                            <h2 className="text-sm font-bold text-stone-900">
+                                                Mesej
+                                            </h2>
+                                            <p className="mt-0.5 text-xs text-stone-500">
+                                                Berbual dengan {providerName} tentang kerja ini
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-5 sm:p-6">
+                                    <ChatBox booking={booking} />
+                                </div>
                             </div>
                         )}
 
@@ -814,7 +849,7 @@ export default function Show({ booking }) {
                             </div>
                         )}
 
-                        {/* 🆕 ---------- Confirm / Dispute card ---------- */}
+                        {/* ---------- Confirm / Dispute card ---------- */}
                         {canConfirm && !showDispute && (
                             <div className="rounded-2xl border border-violet-200 bg-violet-50/60 p-5">
                                 <div className="flex items-start gap-3">
@@ -857,7 +892,7 @@ export default function Show({ booking }) {
                             </div>
                         )}
 
-                        {/* 🆕 ---------- Dispute form ---------- */}
+                        {/* ---------- Dispute form ---------- */}
                         {canConfirm && showDispute && (
                             <form
                                 onSubmit={submitDispute}
@@ -941,7 +976,7 @@ export default function Show({ booking }) {
                             </form>
                         )}
 
-                        {/* 🆕 Disputed notice */}
+                        {/* Disputed notice */}
                         {isDisputed && (
                             <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
                                 <div className="flex items-start gap-3">
@@ -962,7 +997,7 @@ export default function Show({ booking }) {
                             </div>
                         )}
 
-                        {/* 🆕 Payment released confirmation */}
+                        {/* Payment released confirmation */}
                         {isReleased && (
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                                 <div className="flex items-start gap-3">

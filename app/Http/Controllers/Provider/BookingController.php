@@ -63,7 +63,7 @@ class BookingController extends Controller
         $this->authorizeOwnership($booking);
 
         return Inertia::render('Provider/Bookings/Show', [
-            'booking' => $booking->load(['service', 'customer', 'payment', 'review']),
+            'booking' => $booking->load(['service', 'customer', 'payment', 'review', 'messages.sender']),
         ]);
     }
 }

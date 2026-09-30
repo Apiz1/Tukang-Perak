@@ -22,6 +22,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'create'])->name('services.book');
     Route::post('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'store'])->name('services.book.store');
 
+    Route::post('/bookings/{booking}/messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('bookings.messages.store');
+
     Route::middleware('role:customer')->prefix('customer')->name('customer.')->group(function () {
         Route::get('/dashboard', \App\Http\Controllers\Customer\DashboardController::class)->name('dashboard');
         

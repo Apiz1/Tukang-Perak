@@ -65,7 +65,7 @@ class BookingController extends Controller
         abort_unless($booking->customer_id === auth()->id(), 403);
 
        return Inertia::render('Customer/Bookings/Show', [
-            'booking' => $booking->load(['service', 'providerProfile.user', 'review', 'payment']),
+            'booking' => $booking->load(['service', 'providerProfile.user', 'review', 'payment', 'messages.sender']),
         ]);
     }
 
