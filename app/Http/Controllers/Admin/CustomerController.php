@@ -48,7 +48,7 @@ class CustomerController extends Controller
     public function show(User $user): Response
     {
         return Inertia::render('Admin/Customers/Show', [
-            'customer' => $user->loadCount('bookings')->load(['bookings.service', 'bookings.provider.user']),
+           'customer' => $user->loadCount('bookings')->load(['bookings.service', 'bookings.providerProfile.user']),
         ]);
     }
 }

@@ -460,11 +460,8 @@ export default function Show({ customer }) {
                                                                     'Perkhidmatan'}
                                                             </p>
                                                             <p className="mt-0.5 truncate text-xs text-[color:var(--muted)]">
-                                                                #{booking.id}
-                                                                {booking.provider
-                                                                    ?.user
-                                                                    ?.name &&
-                                                                    ` · ${booking.provider.user.name}`}
+                                                                #{booking.providerProfile?.user?.name &&
+                                                            ` · ${booking.providerProfile.user.name}`}
                                                             </p>
                                                         </div>
 
