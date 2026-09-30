@@ -17,7 +17,7 @@ Route::get('/providers/{providerProfile}', [BrowseController::class, 'show'])->n
 
 Route::post('/billplz/callback', \App\Http\Controllers\BillplzCallbackController::class)->name('billplz.callback');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
     Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard.redirect');
     Route::get('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'create'])->name('services.book');
     Route::post('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'store'])->name('services.book.store');
@@ -103,6 +103,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
     Route::patch('/payments/{payment}/release', [\App\Http\Controllers\Admin\PaymentController::class, 'release'])->name('payments.release');
     Route::patch('/payments/{payment}/refund', [\App\Http\Controllers\Admin\PaymentController::class, 'refund'])->name('payments.refund');
+
+    Route::get('/customers', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.index');
+    Route::get('/customers/{user}', [\App\Http\Controllers\Admin\CustomerController::class, 'show'])->name('customers.show');
+    Route::patch('/customers/{user}/suspend', [\App\Http\Controllers\Admin\CustomerController::class, 'suspend'])->name('customers.suspend');
+    Route::patch('/customers/{user}/unsuspend', [\App\Http\Controllers\Admin\CustomerController::class, 'unsuspend'])->name('customers.unsuspend');
     });
 });
 

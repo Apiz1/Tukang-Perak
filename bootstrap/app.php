@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
             'provider.approved' => \App\Http\Middleware\EnsureProviderApproved::class,
+            'account.active' => \App\Http\Middleware\EnsureAccountIsActive::class,
+
         ]);
 
         $middleware->validateCsrfTokens(except: ['billplz/callback']);
