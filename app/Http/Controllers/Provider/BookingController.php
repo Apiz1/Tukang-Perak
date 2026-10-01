@@ -27,6 +27,7 @@ class BookingController extends Controller
         abort_unless($booking->status === 'requested', 403);
 
         $booking->update(['status' => 'accepted']);
+        $booking->notifyStatusChange('Diterima oleh tukang', onlyRole: 'customer');
 
         return back()->with('success', 'Booking accepted.');
     }
@@ -37,6 +38,7 @@ class BookingController extends Controller
         abort_unless($booking->status === 'requested', 403);
 
         $booking->update(['status' => 'declined']);
+        $booking->notifyStatusChange('Ditolak oleh tukang', onlyRole: 'customer');
 
         return back()->with('success', 'Booking declined.');
     }
@@ -60,6 +62,8 @@ class BookingController extends Controller
 
             $booking->update(['status' => 'work_done']);
         }
+        
+        $booking->notifyStatusChange('Kerja telah siap — sila sahkan', onlyRole: 'customer');
 
         return back()->with('success', 'Marked as done. Waiting for customer confirmation.');
     }

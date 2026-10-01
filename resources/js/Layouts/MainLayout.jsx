@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 /* ---------- Guest navigation (public pages) ---------- */
 const guestNavItems = [
-    { label: 'Home',         href: '/' },
+    { label: 'Laman Utama',         href: '/' },
     { label: 'Cari Tukang',  href: '/browse' },
     { label: 'Cara Kerja',   href: '/#cara-kerja' },
     { label: 'Untuk Tukang', href: '/register?role=provider' },
@@ -11,7 +11,7 @@ const guestNavItems = [
 
 /* ---------- Logged-in navigation ---------- */
 const authNavItems = [
-    { label: 'Home',          href: '/' },
+    { label: 'Laman Utama',          href: '/' },
     { label: 'Papan Pemuka',  href: '/dashboard' },
     { label: 'Cari Tukang',   href: '/browse' },
     { label: 'Tempahan Saya', href: '/customer/bookings' },
@@ -220,7 +220,7 @@ export default function MainLayout({ children }) {
                                             
                                         <div className="py-1.5">
                                             <DropdownLink href="/">
-                                                Home
+                                                Laman Utama
                                             </DropdownLink>
 
                                             <DropdownLink href="/dashboard">

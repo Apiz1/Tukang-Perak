@@ -87,6 +87,7 @@ class BookingController extends Controller
 
         $booking->update(['status' => 'completed']);
         $booking->payment->markAsReleased();
+        $booking->notifyStatusChange('Tempahan disahkan siap', onlyRole: 'provider');
 
         return back()->with('success', 'Thanks for confirming! Payment has been released to the provider.');
     }
@@ -102,6 +103,7 @@ class BookingController extends Controller
         ]);
 
         $booking->payment->markAsDisputed($request->reason);
+        $booking->notifyStatusChange('Pertikaian dibuka untuk tempahan ini', onlyRole: 'provider');
 
         return back()->with('success', 'Your report has been sent to our team for review.');
     }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Mail;
 
 #[Fillable(['customer_id', 'provider_profile_id', 'service_id', 'preferred_date', 'district', 'address', 'notes', 'price', 'hours_worked', 'status'])]
 class Booking extends Model
@@ -65,5 +66,18 @@ class Booking extends Model
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Message::class)->orderBy('created_at');
+    }
+
+    public function notifyStatusChange(string $statusLabel, ?string $extraNote = null, ?string $onlyRole = null): void
+    {
+        if ($onlyRole !== 'provider') {
+            Mail::to($this->customer->email)
+                ->send(new \App\Mail\BookingStatusChanged($this, $statusLabel, 'customer', $extraNote));
+        }
+
+        if ($onlyRole !== 'customer') {
+            Mail::to($this->providerProfile->user->email)
+                ->send(new \App\Mail\BookingStatusChanged($this, $statusLabel, 'provider', $extraNote));
+        }
     }
 }
