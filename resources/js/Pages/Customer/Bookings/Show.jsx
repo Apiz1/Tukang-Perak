@@ -119,7 +119,6 @@ const Icon = {
             <path d="M6 3h8M6 17h8M7 3v3.5c0 1.5 3 2 3 3.5s-3 2-3 3.5V17M13 3v3.5c0 1.5-3 2-3 3.5s3 2 3 3.5V17" />
         </svg>
     ),
-    /* 🆕 Chat icon */
     Chat: (p) => (
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
@@ -349,10 +348,23 @@ export default function Show({ booking }) {
     /* Payment state */
     const paymentStatus = booking.payment?.status ?? null;
     const isHourly = booking.service?.price_type === 'hourly';
-    const canPay =
+
+    /* 🆕 Fixed-price: pay after provider accepts */
+    const canPayFixed =
+        !isHourly &&
         booking.status === 'accepted' &&
-        (!booking.payment || paymentStatus === 'pending') &&
-        !isHourly;
+        (!booking.payment || paymentStatus === 'pending');
+
+    /* 🆕 Hourly: pay only after provider marks work done */
+    const canPayHourly =
+        isHourly &&
+        booking.status === 'work_done' &&
+        (!booking.payment || paymentStatus === 'pending');
+
+    /* 🆕 Hourly total calculation */
+    const hourlyHours = Number(booking.hours_worked ?? 0);
+    const hourlyTotal = isHourly ? hourlyHours * Number(booking.price ?? 0) : 0;
+
     const isHeld = paymentStatus === 'held';
     const isReleased = paymentStatus === 'released';
 
@@ -361,7 +373,7 @@ export default function Show({ booking }) {
         booking.status === 'work_done' && paymentStatus === 'held';
     const isDisputed = booking.status === 'disputed';
 
-    /* 🆕 Chat visibility — only show once the provider has accepted */
+    /* Chat visibility */
     const canChat = ['accepted', 'work_done', 'completed', 'disputed'].includes(
         booking.status
     );
@@ -419,7 +431,7 @@ export default function Show({ booking }) {
         );
     };
 
-    /* Payment flow */
+    /* Payment flow — works for both fixed and hourly */
     const handlePay = () => {
         router.post(route('customer.bookings.pay', booking.id));
     };
@@ -519,10 +531,15 @@ export default function Show({ booking }) {
                             {booking.price != null && (
                                 <div className="shrink-0 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-center">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
-                                        Harga
+                                        {isHourly ? 'Kadar' : 'Harga'}
                                     </p>
                                     <p className="mt-1 font-serif text-2xl tracking-tight text-emerald-700">
                                         {formatCurrency(booking.price)}
+                                        {isHourly && (
+                                            <span className="text-sm text-emerald-600/80">
+                                                {' '}/jam
+                                            </span>
+                                        )}
                                     </p>
                                 </div>
                             )}
@@ -630,7 +647,7 @@ export default function Show({ booking }) {
                             </div>
                         )}
 
-                        {/* 🆕 ---------- Messages / Chat ---------- */}
+                        {/* ---------- Messages / Chat ---------- */}
                         {canChat && (
                             <div className="rounded-2xl border border-stone-200 bg-white">
                                 <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4 sm:px-6">
@@ -774,8 +791,8 @@ export default function Show({ booking }) {
 
                     {/* RIGHT: sidebar */}
                     <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
-                        {/* ---------- Payment card ---------- */}
-                        {canPay && (
+                        {/* 🆕 ---------- Fixed-price payment card ---------- */}
+                        {canPayFixed && (
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
                                 <div className="flex items-start gap-3">
                                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-700 text-white">
@@ -806,10 +823,70 @@ export default function Show({ booking }) {
                             </div>
                         )}
 
-                        {/* Hourly service notice */}
-                        {booking.status === 'accepted' &&
-                            (!booking.payment || paymentStatus === 'pending') &&
-                            isHourly && (
+                        {/* 🆕 ---------- Hourly payment card (after work done) ---------- */}
+                        {canPayHourly && (
+                            <div className="rounded-2xl border border-violet-200 bg-violet-50/60 p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-violet-600 text-white">
+                                        <Icon.Card style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-violet-900">
+                                            Bayaran diperlukan
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-5 text-violet-800/90">
+                                            Tukang telah menandakan kerja siap.
+                                            Sahkan jumlah jam dan selesaikan bayaran.
+                                        </p>
+
+                                        {/* Hours summary */}
+                                        <div className="mt-3 rounded-xl border border-violet-200 bg-white p-3">
+                                            <div className="flex items-baseline justify-between gap-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                                                    Jam dilaporkan
+                                                </span>
+                                                <span className="text-sm font-bold text-stone-900">
+                                                    {hourlyHours} jam
+                                                </span>
+                                            </div>
+                                            <div className="mt-1.5 flex items-baseline justify-between gap-2 border-t border-stone-100 pt-1.5">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                                                    Kadar
+                                                </span>
+                                                <span className="text-sm font-semibold text-stone-700">
+                                                    {formatCurrency(booking.price)} / jam
+                                                </span>
+                                            </div>
+                                            <div className="mt-1.5 flex items-baseline justify-between gap-2 border-t border-stone-100 pt-1.5">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-violet-700">
+                                                    Jumlah
+                                                </span>
+                                                <span className="font-serif text-lg tracking-tight text-violet-700">
+                                                    {formatCurrency(hourlyTotal)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={handlePay}
+                                            className="group mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 hover:shadow-md"
+                                        >
+                                            Bayar {formatCurrency(hourlyTotal)} sekarang
+                                            <Icon.ArrowRight
+                                                className="transition-transform group-hover:translate-x-0.5"
+                                                style={{ width: 14, height: 14 }}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Hourly service notice — waiting for provider to log hours */}
+                        {isHourly &&
+                            booking.status === 'accepted' &&
+                            (!booking.payment || paymentStatus === 'pending') && (
                                 <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
                                     <div className="flex items-start gap-3">
                                         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700">
@@ -817,12 +894,13 @@ export default function Show({ booking }) {
                                         </span>
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold text-amber-900">
-                                                Bayaran dalam talian belum tersedia
+                                                Bayaran selepas kerja siap
                                             </p>
                                             <p className="mt-0.5 text-xs leading-5 text-amber-800/90">
                                                 Untuk perkhidmatan mengikut jam,
-                                                sila hubungi tukang untuk
-                                                urusan bayaran.
+                                                bayaran dibuat selepas tukang
+                                                melaporkan jumlah jam dan
+                                                menandakan kerja siap.
                                             </p>
                                         </div>
                                     </div>

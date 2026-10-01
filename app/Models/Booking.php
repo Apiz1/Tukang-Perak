@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['customer_id', 'provider_profile_id', 'service_id', 'preferred_date', 'district', 'address', 'notes', 'price', 'status'])]
+#[Fillable(['customer_id', 'provider_profile_id', 'service_id', 'preferred_date', 'district', 'address', 'notes', 'price', 'hours_worked', 'status'])]
 class Booking extends Model
 {
     use HasFactory;
@@ -19,7 +19,17 @@ class Booking extends Model
         return [
             'preferred_date' => 'date',
             'price' => 'decimal:2',
+            'hours_worked' => 'decimal:2',
         ];
+    }
+
+    public function finalAmount(): float
+    {
+        if ($this->service->price_type === 'hourly') {
+            return round(((float) $this->price) * ((float) $this->hours_worked), 2);
+        }
+
+        return (float) $this->price;
     }
 
     public function customer(): BelongsTo

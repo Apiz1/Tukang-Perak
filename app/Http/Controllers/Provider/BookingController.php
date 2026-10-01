@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Provider;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,13 +41,25 @@ class BookingController extends Controller
         return back()->with('success', 'Booking declined.');
     }
 
-    public function markWorkDone(Booking $booking): RedirectResponse
+    public function markWorkDone(Request $request, Booking $booking): RedirectResponse
     {
         $this->authorizeOwnership($booking);
         abort_unless($booking->status === 'accepted', 403);
-        abort_unless($booking->payment?->status === 'held', 403, 'The customer has not paid yet.');
 
-        $booking->update(['status' => 'work_done']);
+        if ($booking->service->price_type === 'hourly') {
+            $request->validate([
+                'hours_worked' => 'required|numeric|min:0.25|max:999',
+            ]);
+
+            $booking->update([
+                'hours_worked' => $request->hours_worked,
+                'status' => 'work_done',
+            ]);
+        } else {
+            abort_unless($booking->payment?->status === 'held', 403, 'The customer has not paid yet.');
+
+            $booking->update(['status' => 'work_done']);
+        }
 
         return back()->with('success', 'Marked as done. Waiting for customer confirmation.');
     }

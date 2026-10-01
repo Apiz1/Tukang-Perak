@@ -15,17 +15,20 @@ class PaymentController extends Controller
     public function store(Booking $booking, BillplzService $billplz)
     {
         abort_unless($booking->customer_id === auth()->id(), 403);
-        abort_unless($booking->status === 'accepted', 403);
 
-        if ($booking->service->price_type === 'hourly') {
-            return back()->with('error', 'Online payment for hourly services is not available yet.');
+        $isHourly = $booking->service->price_type === 'hourly';
+
+        if ($isHourly) {
+            abort_unless($booking->status === 'work_done', 403);
+            abort_unless($booking->hours_worked !== null, 403);
+        } else {
+            abort_unless($booking->status === 'accepted', 403);
         }
 
         if ($booking->payments()->whereIn('status', ['held', 'released'])->exists()) {
             return back()->with('error', 'This booking is already paid.');
         }
 
-        // Reuse an unpaid bill instead of creating duplicates
         $existing = $booking->payments()
             ->where('status', 'pending')
             ->whereNotNull('billplz_url')
@@ -36,12 +39,13 @@ class PaymentController extends Controller
             return Inertia::location($existing->billplz_url);
         }
 
-        $fee = round(((float) $booking->price) * ((float) config('services.marketplace.platform_fee_percent')) / 100, 2);
+        $amount = $booking->finalAmount();
+        $fee = round($amount * ((float) config('services.marketplace.platform_fee_percent')) / 100, 2);
 
         $payment = $booking->payments()->create([
-            'amount' => $booking->price,
+            'amount' => $amount,
             'platform_fee' => $fee,
-            'provider_amount' => ((float) $booking->price) - $fee,
+            'provider_amount' => $amount - $fee,
         ]);
 
         try {
@@ -58,7 +62,6 @@ class PaymentController extends Controller
             'billplz_url' => $bill['url'],
         ]);
 
-        // Full-page redirect to Billplz (a normal redirect() wouldn't leave the Inertia app)
         return Inertia::location($bill['url']);
     }
 

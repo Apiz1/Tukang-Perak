@@ -216,6 +216,9 @@ export default function Show({ booking }) {
     const [processing, setProcessing] = useState(false);
     const [showDeclineModal, setShowDeclineModal] = useState(false);
 
+    /* 🆕 Hourly work tracking */
+    const [hoursWorked, setHoursWorked] = useState('');
+
     const status = booking.status ?? 'requested';
     const config = statusConfig[status] ?? statusConfig.requested;
     const StatusIcon = config.icon;
@@ -227,18 +230,35 @@ export default function Show({ booking }) {
 
     const canAccept = status === 'requested';
     const canDecline = status === 'requested';
-    const canMarkWorkDone = status === 'accepted' && paymentHeld;
+    const canMarkWorkDone =
+    status === 'accepted' &&
+    (paymentHeld || (isHourly && booking.payment?.status !== 'released'));
 
-    /* 🆕 Dynamic status hint — changes once payment is held */
+    /* 🆕 Hourly total preview */
+    const hoursNumber = Number(hoursWorked);
+    const totalPreview =
+        isHourly && hoursWorked && !isNaN(hoursNumber) && hoursNumber > 0
+            ? hoursNumber * Number(booking.price ?? 0)
+            : null;
+
+    /* 🆕 Require hours input before submitting an hourly job */
+    const markWorkDoneDisabled =
+        processing || (isHourly && (!hoursWorked || hoursNumber <= 0));
+
+    /* Dynamic status hint — changes once payment is held */
     const statusHint =
         status === 'accepted' && paymentHeld
             ? 'Pelanggan telah membuat pembayaran. Anda boleh mula bekerja.'
+            : status === 'accepted' && isHourly
+            ? 'Kerja boleh dimulakan. Bayaran akan dibuat selepas anda melaporkan jam dan menandakan kerja siap.'
             : config.hint;
 
-    /* 🆕 Dynamic status label — show a sub-state for paid-and-accepted */
+    /* Dynamic status label — show a sub-state for paid-and-accepted */
     const statusLabel =
         status === 'accepted' && paymentHeld
             ? 'Telah Membuat Pembayaran'
+            : status === 'accepted' && isHourly
+            ? 'Diterima — Bayaran Selepas Kerja'
             : config.label;
 
     /* Chat visibility — once accepted, both parties can chat */
@@ -246,16 +266,22 @@ export default function Show({ booking }) {
         status
     );
 
-    const act = (url) => {
+    const act = (url, payload = {}) => {
         setProcessing(true);
-        router.patch(url, {}, {
+        router.patch(url, payload, {
             preserveScroll: true,
             onFinish: () => setProcessing(false),
         });
     };
 
     const handleAccept = () => act(route('provider.bookings.accept', booking.id));
-    const handleMarkWorkDone = () => act(route('provider.bookings.mark-work-done', booking.id));
+
+    /* 🆕 Pass hours_worked only for hourly services */
+    const handleMarkWorkDone = () => {
+        const payload = isHourly ? { hours_worked: hoursNumber } : {};
+        act(route('provider.bookings.mark-work-done', booking.id), payload);
+    };
+
     const handleDecline = () => {
         setShowDeclineModal(false);
         act(route('provider.bookings.decline', booking.id));
@@ -416,10 +442,11 @@ export default function Show({ booking }) {
                                         sehingga kerja ditandakan selesai.
                                     </p>
                                 )}
-                                {!paymentHeld && status === 'accepted' && (
+                               {!paymentHeld && status === 'accepted' && (
                                     <p className="mt-1 text-xs leading-5 text-[color:var(--muted)]">
-                                        Tunggu pelanggan membuat bayaran
-                                        sebelum memulakan kerja.
+                                        {isHourly
+                                            ? 'Bayaran akan dibuat selepas anda melaporkan jam dan menandakan kerja siap.'
+                                            : 'Tunggu pelanggan membuat bayaran sebelum memulakan kerja.'}
                                     </p>
                                 )}
                             </div>
@@ -606,16 +633,61 @@ export default function Show({ booking }) {
                                     </button>
                                 )}
 
+                                {/* 🆕 Mark work done — hourly hours input */}
                                 {canMarkWorkDone && (
-                                    <button
-                                        type="button"
-                                        disabled={processing}
-                                        onClick={handleMarkWorkDone}
-                                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[color:var(--green)] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[color:var(--green-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <Icon.Check style={{ width: 14, height: 14 }} />
-                                        Tanda kerja siap
-                                    </button>
+                                    <>
+                                        {isHourly && (
+                                            <div className="rounded-xl border border-[color:var(--line)] bg-[color:var(--paper)]/60 p-3">
+                                                <label
+                                                    htmlFor="hours-worked"
+                                                    className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--muted)]"
+                                                >
+                                                    Jumlah jam bekerja
+                                                </label>
+                                                <input
+                                                    id="hours-worked"
+                                                    type="number"
+                                                    step="0.25"
+                                                    min="0.25"
+                                                    inputMode="decimal"
+                                                    value={hoursWorked}
+                                                    onChange={(e) =>
+                                                        setHoursWorked(e.target.value)
+                                                    }
+                                                    placeholder="cth. 3.5"
+                                                    className="mt-1.5 w-full rounded-lg border border-[color:var(--line)] bg-white px-3 py-2 text-sm text-[color:var(--ink)] placeholder-[color:var(--muted)] outline-none transition focus:border-[color:var(--green)] focus:ring-2 focus:ring-[color:var(--green)]/15"
+                                                />
+
+                                                {totalPreview != null && (
+                                                    <div className="mt-2 flex items-baseline justify-between gap-2 rounded-lg bg-white px-3 py-2">
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--muted)]">
+                                                            Jumlah
+                                                        </span>
+                                                        <span className="text-sm font-bold text-[color:var(--green-dark)]">
+                                                            {formatCurrency(totalPreview)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            disabled={markWorkDoneDisabled}
+                                            onClick={handleMarkWorkDone}
+                                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[color:var(--green)] px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[color:var(--green-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            <Icon.Check style={{ width: 14, height: 14 }} />
+                                            {processing ? 'Memproses...' : 'Tanda kerja siap'}
+                                        </button>
+
+                                        {isHourly && !hoursWorked && (
+                                            <p className="text-[10px] leading-4 text-[color:var(--muted)]">
+                                                Masukkan jumlah jam bekerja untuk
+                                                meneruskan.
+                                            </p>
+                                        )}
+                                    </>
                                 )}
 
                                 {status === 'accepted' && !paymentHeld && (
