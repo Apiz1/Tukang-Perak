@@ -20,12 +20,14 @@ class ReviewController extends Controller
             'comment' => 'nullable|string|max:1000',
         ]);
 
-        $booking->review()->create([
+        $review = $booking->review()->create([
             'customer_id' => auth()->id(),
             'provider_profile_id' => $booking->provider_profile_id,
             'rating' => $request->rating,
             'comment' => $request->comment,
         ]);
+
+        $booking->providerProfile->user->notify(new \App\Notifications\ReviewNotification($review));
 
         return back()->with('success', 'Thanks for your review!');
     }

@@ -107,6 +107,12 @@ class BookingController extends Controller
         $booking->payment->markAsDisputed($request->reason);
         $booking->notifyStatusChange('Pertikaian dibuka untuk tempahan ini', onlyRole: 'provider');
 
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\AdminAlertNotification(
+            "Pertikaian dibuka untuk tempahan #{$booking->id}",
+            route('admin.bookings.show', $booking)
+        ));
+
         return back()->with('success', 'Your report has been sent to our team for review.');
     }
 }
