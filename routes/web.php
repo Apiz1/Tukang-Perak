@@ -22,6 +22,9 @@ Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
     Route::get('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'create'])->name('services.book');
     Route::post('/services/{service}/book', [\App\Http\Controllers\Customer\BookingController::class, 'store'])->name('services.book.store');
 
+    Route::patch('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::patch('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
     Route::post('/bookings/{booking}/messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('bookings.messages.store');
 
     Route::middleware('role:customer')->prefix('customer')->name('customer.')->group(function () {

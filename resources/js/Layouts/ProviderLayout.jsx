@@ -69,7 +69,6 @@ const Icon = {
             <path d="M7 9V6.5a3 3 0 116 0V9" />
         </svg>
     ),
-    /* 🆕 Star icon for the Reviews nav item */
     Star: (p) => (
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
@@ -79,15 +78,12 @@ const Icon = {
 };
 
 /* ---------- Navigation config — plain paths ---------- */
-/* 🆕 `requiresApproved: true` marks items that should only be shown
-   when the provider's profile status is "approved". */
 const navSections = [
     {
         label: 'Utama',
         items: [
-            { label: 'Papan pemuka', href: '/provider/dashboard',           icon: 'Home' },
+            { label: 'Papan pemuka', href: '/provider/dashboard', icon: 'Home' },
             { label: 'Tempahan',     href: '/provider/bookings',  icon: 'Calendar', requiresApproved: true },
-            /* 🆕 Reviews — sits next to Bookings, gated the same way */
             { label: 'Ulasan',       href: '/provider/reviews',   icon: 'Star',     requiresApproved: true },
         ],
     },
@@ -101,13 +97,9 @@ const navSections = [
 ];
 
 export default function ProviderLayout({ children, title, breadcrumb }) {
-    const { auth, url } = usePage().props;
+    const { auth, url, notifications } = usePage().props;
     const user = auth?.user ?? null;
 
-    /* 🆕 Determine whether the provider is approved.
-       `provider_status` is shared via HandleInertiaRequests.
-       Fallback to `user.providerProfile?.status` in case you
-       already pass it that way. */
     const providerStatus =
         user?.provider_status ?? user?.providerProfile?.status ?? null;
     const isApproved = providerStatus === 'approved';
@@ -118,8 +110,13 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
 
+    /* 🆕 Notification state */
+    const [notifOpen, setNotifOpen] = useState(false);
+
     const userMenuRef = useRef(null);
     const cancelBtnRef = useRef(null);
+    /* 🆕 Notification ref */
+    const notifRef = useRef(null);
 
     /* ---------- Active route check using current URL ---------- */
     const isActive = (href) => {
@@ -145,11 +142,31 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
         };
     }, [userMenuOpen]);
 
+    /* 🆕 Close notification dropdown on outside click / Escape ---------- */
+    useEffect(() => {
+        if (!notifOpen) return;
+        const onClick = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) {
+                setNotifOpen(false);
+            }
+        };
+        const onKey = (e) => e.key === 'Escape' && setNotifOpen(false);
+        document.addEventListener('mousedown', onClick);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('mousedown', onClick);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, [notifOpen]);
+
     /* ---------- Close user menu on route change ---------- */
     useEffect(() => router.on('navigate', () => setUserMenuOpen(false)), []);
 
     /* ---------- Close mobile sidebar on route change ---------- */
     useEffect(() => router.on('navigate', () => setMobileOpen(false)), []);
+
+    /* 🆕 Close notification dropdown on route change */
+    useEffect(() => router.on('navigate', () => setNotifOpen(false)), []);
 
     /* ---------- Logout modal: escape + scroll lock + autofocus ---------- */
     useEffect(() => {
@@ -200,6 +217,24 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
         );
     };
 
+    /* 🆕 Notification handlers */
+    const handleNotificationClick = (notif) => {
+        router.patch(route('notifications.read', notif.id), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+        if (notif.data?.url) {
+            router.visit(notif.data.url);
+        }
+    };
+
+    const handleMarkAllRead = () => {
+        router.patch(route('notifications.read-all'), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
     return (
         <div className="provider-shell">
             {/* ============ SIDEBAR ============ */}
@@ -215,14 +250,12 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                     </span>
                 </Link>
 
-                {/* 🆕 Nav — filters out `requiresApproved` items when not approved */}
                 <nav className="provider-sidebar__nav">
                     {navSections.map((section) => {
                         const visibleItems = section.items.filter(
                             (item) => !item.requiresApproved || isApproved
                         );
 
-                        // Hide the whole section if nothing is visible
                         if (visibleItems.length === 0) return null;
 
                         return (
@@ -256,8 +289,6 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                         );
                     })}
 
-                    {/* 🆕 Non-approved hint — tells the provider why some
-                        items are missing, so the reduced nav doesn't feel broken */}
                     {!isApproved && providerStatus && (
                         <div
                             className="mt-4 flex items-start gap-2.5 rounded-xl border border-dashed border-[color:var(--line)] bg-white/60 p-3"
@@ -334,13 +365,116 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                     </div>
 
                     <div className="provider-topbar__right">
-                        <button
-                            type="button"
-                            className="provider-icon-btn"
-                            aria-label="Notifikasi"
-                        >
-                            <Icon.Bell style={{ width: 18, height: 18 }} />
-                        </button>
+                        {/* 🆕 Notification bell with dropdown */}
+                        <div className="relative" ref={notifRef}>
+                            <button
+                                type="button"
+                                className="provider-icon-btn"
+                                aria-label="Notifikasi"
+                                onClick={() => setNotifOpen((v) => !v)}
+                            >
+                                <Icon.Bell style={{ width: 18, height: 18 }} />
+                                {notifications?.unread_count > 0 && (
+                                    <span
+                                        style={{
+                                            position: 'absolute',
+                                            top: -2,
+                                            right: -2,
+                                            fontSize: 10,
+                                            background: 'red',
+                                            color: 'white',
+                                            borderRadius: 999,
+                                            minWidth: 16,
+                                            height: 16,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        {notifications.unread_count > 9
+                                            ? '9+'
+                                            : notifications.unread_count}
+                                    </span>
+                                )}
+                            </button>
+
+                            {notifOpen && (
+                                <div className="provider-dropdown" role="menu">
+                                    <div className="provider-dropdown__header">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <p className="provider-dropdown__name">
+                                                Notifikasi
+                                            </p>
+                                            {notifications?.unread_count > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleMarkAllRead}
+                                                    className="text-xs font-bold text-[color:var(--green)] hover:text-[color:var(--green-dark)]"
+                                                >
+                                                    Tandakan semua dibaca
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="provider-dropdown__body">
+                                        {(!notifications?.recent ||
+                                            notifications.recent.length === 0) && (
+                                            <p
+                                                style={{
+                                                    padding: 12,
+                                                    fontSize: 13,
+                                                    color: 'var(--muted)',
+                                                }}
+                                            >
+                                                Tiada notifikasi
+                                            </p>
+                                        )}
+
+                                        {notifications?.recent?.map((notif) => (
+                                            <button
+                                                key={notif.id}
+                                                type="button"
+                                                onClick={() =>
+                                                    handleNotificationClick(notif)
+                                                }
+                                                className="provider-dropdown__item"
+                                                style={{
+                                                    opacity: notif.read_at ? 0.6 : 1,
+                                                    textAlign: 'left',
+                                                    width: '100%',
+                                                }}
+                                            >
+                                                <div>
+                                                    <p
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontSize: 13,
+                                                        }}
+                                                    >
+                                                        {notif.data?.status_label ??
+                                                            'Notifikasi'}
+                                                    </p>
+                                                    <p
+                                                        style={{
+                                                            fontSize: 12,
+                                                            color: 'var(--muted)',
+                                                        }}
+                                                    >
+                                                        {notif.data?.service_title ??
+                                                            ''}
+                                                        {notif.data?.service_title &&
+                                                            notif.created_at &&
+                                                            ' · '}
+                                                        {notif.created_at ?? ''}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <div className="relative" ref={userMenuRef}>
                             <button

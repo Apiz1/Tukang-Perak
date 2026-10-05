@@ -73,11 +73,15 @@ class Booking extends Model
         if ($onlyRole !== 'provider') {
             Mail::to($this->customer->email)
                 ->send(new \App\Mail\BookingStatusChanged($this, $statusLabel, 'customer', $extraNote));
+
+            $this->customer->notify(new \App\Notifications\BookingStatusNotification($this, $statusLabel, 'customer'));
         }
 
         if ($onlyRole !== 'customer') {
             Mail::to($this->providerProfile->user->email)
                 ->send(new \App\Mail\BookingStatusChanged($this, $statusLabel, 'provider', $extraNote));
+
+            $this->providerProfile->user->notify(new \App\Notifications\BookingStatusNotification($this, $statusLabel, 'provider'));
         }
     }
 }

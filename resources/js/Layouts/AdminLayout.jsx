@@ -50,7 +50,6 @@ const Icon = {
             <path d="M3 8h14M7 2v4M13 2v4" />
         </svg>
     ),
-    /* 🆕 Card / payments icon */
     Card: (p) => (
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
@@ -95,14 +94,13 @@ const navSections = [
         items: [
             { label: 'Tukang',   href: '/admin/providers', icon: 'Wrench' },
             { label: 'Pelanggan', href: '/admin/customers', icon: 'Users' },
-            /* 🆕 Payments — sits after Pelanggan */
             { label: 'Bayaran',  href: '/admin/payments',  icon: 'Card' },
         ],
     },
 ];
 
 export default function AdminLayout({ children, title, breadcrumb }) {
-    const { auth, url } = usePage().props;
+    const { auth, url, notifications } = usePage().props;
     const user = auth?.user ?? null;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -111,8 +109,13 @@ export default function AdminLayout({ children, title, breadcrumb }) {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
 
+    /* 🆕 Notification state */
+    const [notifOpen, setNotifOpen] = useState(false);
+
     const userMenuRef = useRef(null);
     const cancelBtnRef = useRef(null);
+    /* 🆕 Notification ref */
+    const notifRef = useRef(null);
 
     /* ---------- Active route check ---------- */
     const isActive = (href) => {
@@ -138,9 +141,28 @@ export default function AdminLayout({ children, title, breadcrumb }) {
         };
     }, [userMenuOpen]);
 
+    /* 🆕 Close notification dropdown on outside click / Escape ---------- */
+    useEffect(() => {
+        if (!notifOpen) return;
+        const onClick = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) {
+                setNotifOpen(false);
+            }
+        };
+        const onKey = (e) => e.key === 'Escape' && setNotifOpen(false);
+        document.addEventListener('mousedown', onClick);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('mousedown', onClick);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, [notifOpen]);
+
     /* ---------- Close on route change ---------- */
     useEffect(() => router.on('navigate', () => setUserMenuOpen(false)), []);
     useEffect(() => router.on('navigate', () => setMobileOpen(false)), []);
+    /* 🆕 Close notification dropdown on route change */
+    useEffect(() => router.on('navigate', () => setNotifOpen(false)), []);
 
     /* ---------- Logout modal ---------- */
     useEffect(() => {
@@ -189,6 +211,24 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                 },
             }
         );
+    };
+
+    /* 🆕 Notification handlers */
+    const handleNotificationClick = (notif) => {
+        router.patch(route('notifications.read', notif.id), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+        if (notif.data?.url) {
+            router.visit(notif.data.url);
+        }
+    };
+
+    const handleMarkAllRead = () => {
+        router.patch(route('notifications.read-all'), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
     };
 
     return (
@@ -294,13 +334,116 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                     </div>
 
                     <div className="admin-topbar__right">
-                        <button
-                            type="button"
-                            className="admin-icon-btn"
-                            aria-label="Notifikasi"
-                        >
-                            <Icon.Bell style={{ width: 18, height: 18 }} />
-                        </button>
+                        {/* 🆕 Notification bell with dropdown */}
+                        <div className="relative" ref={notifRef}>
+                            <button
+                                type="button"
+                                className="admin-icon-btn"
+                                aria-label="Notifikasi"
+                                onClick={() => setNotifOpen((v) => !v)}
+                            >
+                                <Icon.Bell style={{ width: 18, height: 18 }} />
+                                {notifications?.unread_count > 0 && (
+                                    <span
+                                        style={{
+                                            position: 'absolute',
+                                            top: -2,
+                                            right: -2,
+                                            fontSize: 10,
+                                            background: 'red',
+                                            color: 'white',
+                                            borderRadius: 999,
+                                            minWidth: 16,
+                                            height: 16,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        {notifications.unread_count > 9
+                                            ? '9+'
+                                            : notifications.unread_count}
+                                    </span>
+                                )}
+                            </button>
+
+                            {notifOpen && (
+                                <div className="admin-dropdown" role="menu">
+                                    <div className="admin-dropdown__header">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <p className="admin-dropdown__name">
+                                                Notifikasi
+                                            </p>
+                                            {notifications?.unread_count > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleMarkAllRead}
+                                                    className="text-xs font-bold text-[color:var(--green)] hover:text-[color:var(--green-dark)]"
+                                                >
+                                                    Tandakan semua dibaca
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="admin-dropdown__body">
+                                        {(!notifications?.recent ||
+                                            notifications.recent.length === 0) && (
+                                            <p
+                                                style={{
+                                                    padding: 12,
+                                                    fontSize: 13,
+                                                    color: 'var(--muted)',
+                                                }}
+                                            >
+                                                Tiada notifikasi
+                                            </p>
+                                        )}
+
+                                        {notifications?.recent?.map((notif) => (
+                                            <button
+                                                key={notif.id}
+                                                type="button"
+                                                onClick={() =>
+                                                    handleNotificationClick(notif)
+                                                }
+                                                className="admin-dropdown__item"
+                                                style={{
+                                                    opacity: notif.read_at ? 0.6 : 1,
+                                                    textAlign: 'left',
+                                                    width: '100%',
+                                                }}
+                                            >
+                                                <div>
+                                                    <p
+                                                        style={{
+                                                            fontWeight: 600,
+                                                            fontSize: 13,
+                                                        }}
+                                                    >
+                                                        {notif.data?.status_label ??
+                                                            'Notifikasi'}
+                                                    </p>
+                                                    <p
+                                                        style={{
+                                                            fontSize: 12,
+                                                            color: 'var(--muted)',
+                                                        }}
+                                                    >
+                                                        {notif.data?.service_title ??
+                                                            ''}
+                                                        {notif.data?.service_title &&
+                                                            notif.created_at &&
+                                                            ' · '}
+                                                        {notif.created_at ?? ''}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <div className="relative" ref={userMenuRef}>
                             <button

@@ -17,17 +17,31 @@ const authNavItems = [
     { label: 'Tempahan Saya', href: '/customer/bookings' },
 ];
 
+/* ---------- Bell icon ---------- */
+const BellIcon = (p) => (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+         strokeLinecap="round" strokeLinejoin="round" {...p}>
+        <path d="M5 8a5 5 0 0110 0v3l1.5 2.5h-13L5 11V8z" />
+        <path d="M8.5 15.5a1.5 1.5 0 003 0" />
+    </svg>
+);
+
 export default function MainLayout({ children }) {
-    const { auth } = usePage().props;
+    const { auth, notifications } = usePage().props;
     const user = auth?.user ?? null;
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
 
+    /* 🆕 Notification dropdown state */
+    const [notifOpen, setNotifOpen] = useState(false);
+
     const menuRef = useRef(null);
     const modalRef = useRef(null);
     const cancelBtnRef = useRef(null);
+    /* 🆕 Notification ref */
+    const notifRef = useRef(null);
 
     const navItems = user ? authNavItems : guestNavItems;
 
@@ -54,9 +68,37 @@ export default function MainLayout({ children }) {
         };
     }, [menuOpen]);
 
+    /* 🆕 Close notification dropdown on outside click / Escape ---------- */
+    useEffect(() => {
+        if (!notifOpen) return;
+
+        const handleClickOutside = (event) => {
+            if (notifRef.current && !notifRef.current.contains(event.target)) {
+                setNotifOpen(false);
+            }
+        };
+
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') setNotifOpen(false);
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [notifOpen]);
+
     /* ---------- Close dropdown on route change ---------- */
     useEffect(() => {
         return router.on('navigate', () => setMenuOpen(false));
+    }, []);
+
+    /* 🆕 Close notification dropdown on route change */
+    useEffect(() => {
+        return router.on('navigate', () => setNotifOpen(false));
     }, []);
 
     /* ---------- Modal: escape + scroll lock + focus ---------- */
@@ -107,6 +149,24 @@ export default function MainLayout({ children }) {
         );
     };
 
+    /* 🆕 Notification handlers */
+    const handleNotificationClick = (notif) => {
+        router.patch(route('notifications.read', notif.id), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+        if (notif.data?.url) {
+            router.visit(notif.data.url);
+        }
+    };
+
+    const handleMarkAllRead = () => {
+        router.patch(route('notifications.read-all'), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
     const initials = user?.name
         ?.split(' ')
         .filter(Boolean)
@@ -152,141 +212,260 @@ export default function MainLayout({ children }) {
                     <div className="flex items-center gap-2 sm:gap-3">
                         {user ? (
                             /* ============ LOGGED IN ============ */
-                            <div className="relative" ref={menuRef}>
-                                <button
-                                    type="button"
-                                    onClick={() => setMenuOpen((open) => !open)}
-                                    aria-haspopup="menu"
-                                    aria-expanded={menuOpen}
-                                    className="flex items-center gap-2 rounded-full border border-stone-200 bg-white py-1 pl-1 pr-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-emerald-200 hover:bg-stone-50 sm:gap-2.5 sm:pr-3"
-                                >
-                                    {user.avatar_url ? (
-                                        <img
-                                            src={user.avatar_url}
-                                            alt=""
-                                            className="h-8 w-8 rounded-full object-cover"
-                                        />
-                                    ) : (
-                                        <span className="grid h-8 w-8 place-items-center rounded-full bg-emerald-700 text-xs font-bold text-white">
-                                            {initials || 'U'}
-                                        </span>
-                                    )}
-
-                                    <span className="hidden max-w-[120px] truncate sm:inline">
-                                        {user.name}
-                                    </span>
-
-                                    <svg
-                                        viewBox="0 0 12 12"
-                                        className={`h-3 w-3 text-stone-500 transition-transform ${
-                                            menuOpen ? 'rotate-180' : ''
-                                        }`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
+                            <>
+                                {/* 🆕 Notification bell */}
+                                <div className="relative" ref={notifRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNotifOpen((v) => !v)}
+                                        aria-label="Notifikasi"
+                                        aria-haspopup="menu"
+                                        aria-expanded={notifOpen}
+                                        className="relative grid h-10 w-10 place-items-center rounded-full border border-stone-200 bg-white text-stone-600 shadow-sm transition hover:border-emerald-200 hover:bg-stone-50 hover:text-emerald-700"
                                     >
-                                        <path d="M2.5 4.5L6 8l3.5-3.5" />
-                                    </svg>
-                                </button>
+                                        <BellIcon className="h-[18px] w-[18px]" />
 
-                                {/* ---------- Dropdown ---------- */}
-                                {menuOpen && (
-                                    <div
-                                        role="menu"
-                                        className="absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-xl shadow-stone-900/10"
-                                    >
-                                        {/* User header */}
-                                        <div className="border-b border-stone-100 px-4 py-3.5">
-                                            <p className="truncate text-sm font-semibold text-stone-900">
-                                                {user.name}
-                                            </p>
-                                            <p className="mt-0.5 truncate text-xs text-stone-500">
-                                                {user.email}
-                                            </p>
-                                            {user.role && (
-                                                <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-                                                    {user.role === 'provider'
-                                                        ? '🔧 Tukang'
-                                                        : user.role === 'admin'
-                                                        ? '⚙️ Pentadbir'
-                                                        : '👤 Pelanggan'}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Menu items */}
-                                            
-                                        <div className="py-1.5">
-                                            <DropdownLink href="/">
-                                                Laman Utama
-                                            </DropdownLink>
-
-                                            <DropdownLink href="/dashboard">
-                                                Papan pemuka
-                                            </DropdownLink>
-
-                                            {user.role === 'provider' && (
-                                                <>
-                                                    <DropdownLink href="/provider/profile">
-                                                        Profil tukang
-                                                    </DropdownLink>
-                                                    <DropdownLink href="/provider/services">
-                                                        Perkhidmatan saya
-                                                    </DropdownLink>
-                                                </>
-                                            )}
-
-                                            {user.role === 'customer' && (
-                                                <>
-                                                    <DropdownLink href="/customer/bookings">
-                                                        Tempahan saya
-                                                    </DropdownLink>
-                                                    <DropdownLink href="/favorites">
-                                                        Tukang disimpan
-                                                    </DropdownLink>
-                                                </>
-                                            )}
-
-                                            {user.role === 'admin' && (
-                                                <DropdownLink href="/admin/providers">
-                                                    Urus tukang
-                                                </DropdownLink>
-                                            )}
-
-                                            <DropdownLink href="/profile">
-                                                Tetapan akaun
-                                            </DropdownLink>
-                                        </div>
-
-                                        {/* Logout */}
-                                        <div className="border-t border-stone-100 p-1.5">
-                                            <button
-                                                type="button"
-                                                onClick={openLogoutModal}
-                                                role="menuitem"
-                                                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                                        {notifications?.unread_count > 0 && (
+                                            <span
+                                                className="absolute -right-0.5 -top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white ring-2 ring-stone-50"
                                             >
-                                                <svg
-                                                    viewBox="0 0 16 16"
-                                                    className="h-4 w-4"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="1.6"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                >
-                                                    <path d="M10 2h3a1 1 0 011 1v10a1 1 0 01-1 1h-3" />
-                                                    <path d="M6 11l3-3-3-3" />
-                                                    <path d="M9 8H2" />
-                                                </svg>
-                                                Log keluar
-                                            </button>
+                                                {notifications.unread_count > 9
+                                                    ? '9+'
+                                                    : notifications.unread_count}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {/* 🆕 Notification dropdown */}
+                                    {notifOpen && (
+                                        <div
+                                            role="menu"
+                                            className="absolute right-0 mt-2 w-80 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-xl shadow-stone-900/10"
+                                        >
+                                            {/* Header */}
+                                            <div className="flex items-center justify-between gap-3 border-b border-stone-100 px-4 py-3.5">
+                                                <p className="text-sm font-bold text-stone-900">
+                                                    Notifikasi
+                                                </p>
+                                                {notifications?.unread_count > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleMarkAllRead}
+                                                        className="text-[11px] font-bold text-emerald-700 transition hover:text-emerald-800"
+                                                    >
+                                                        Tandakan semua dibaca
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Body */}
+                                            <div className="max-h-96 overflow-y-auto py-1.5">
+                                                {(!notifications?.recent ||
+                                                    notifications.recent.length === 0) && (
+                                                    <div className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
+                                                        <span className="grid h-10 w-10 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
+                                                            <BellIcon className="h-5 w-5" />
+                                                        </span>
+                                                        <p className="text-sm font-semibold text-stone-800">
+                                                            Tiada notifikasi
+                                                        </p>
+                                                        <p className="max-w-[220px] text-xs text-stone-500">
+                                                            Anda akan dimaklumkan
+                                                            apabila ada aktiviti
+                                                            baharu.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {notifications?.recent?.map((notif) => (
+                                                    <button
+                                                        key={notif.id}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleNotificationClick(notif)
+                                                        }
+                                                        className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-stone-50"
+                                                        style={{
+                                                            opacity: notif.read_at
+                                                                ? 0.6
+                                                                : 1,
+                                                        }}
+                                                    >
+                                                        <span
+                                                            className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
+                                                                notif.read_at
+                                                                    ? 'bg-stone-100 text-stone-500'
+                                                                    : 'bg-emerald-50 text-emerald-700'
+                                                            }`}
+                                                        >
+                                                            <BellIcon className="h-4 w-4" />
+                                                        </span>
+
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block truncate text-sm font-semibold text-stone-900">
+                                                                {notif.data
+                                                                    ?.status_label ??
+                                                                    'Notifikasi'}
+                                                            </span>
+                                                            <span className="mt-0.5 block truncate text-xs text-stone-500">
+                                                                {notif.data
+                                                                    ?.service_title ??
+                                                                    ''}
+                                                                {notif.data
+                                                                    ?.service_title &&
+                                                                    notif.created_at &&
+                                                                    ' · '}
+                                                                {notif.created_at ??
+                                                                    ''}
+                                                            </span>
+                                                        </span>
+
+                                                        {!notif.read_at && (
+                                                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-600" />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+
+                                {/* ---------- User menu ---------- */}
+                                <div className="relative" ref={menuRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMenuOpen((open) => !open)}
+                                        aria-haspopup="menu"
+                                        aria-expanded={menuOpen}
+                                        className="flex items-center gap-2 rounded-full border border-stone-200 bg-white py-1 pl-1 pr-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-emerald-200 hover:bg-stone-50 sm:gap-2.5 sm:pr-3"
+                                    >
+                                        {user.avatar_url ? (
+                                            <img
+                                                src={user.avatar_url}
+                                                alt=""
+                                                className="h-8 w-8 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <span className="grid h-8 w-8 place-items-center rounded-full bg-emerald-700 text-xs font-bold text-white">
+                                                {initials || 'U'}
+                                            </span>
+                                        )}
+
+                                        <span className="hidden max-w-[120px] truncate sm:inline">
+                                            {user.name}
+                                        </span>
+
+                                        <svg
+                                            viewBox="0 0 12 12"
+                                            className={`h-3 w-3 text-stone-500 transition-transform ${
+                                                menuOpen ? 'rotate-180' : ''
+                                            }`}
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M2.5 4.5L6 8l3.5-3.5" />
+                                        </svg>
+                                    </button>
+
+                                    {/* ---------- Dropdown ---------- */}
+                                    {menuOpen && (
+                                        <div
+                                            role="menu"
+                                            className="absolute right-0 mt-2 w-60 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-xl shadow-stone-900/10"
+                                        >
+                                            {/* User header */}
+                                            <div className="border-b border-stone-100 px-4 py-3.5">
+                                                <p className="truncate text-sm font-semibold text-stone-900">
+                                                    {user.name}
+                                                </p>
+                                                <p className="mt-0.5 truncate text-xs text-stone-500">
+                                                    {user.email}
+                                                </p>
+                                                {user.role && (
+                                                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                                                        {user.role === 'provider'
+                                                            ? '🔧 Tukang'
+                                                            : user.role === 'admin'
+                                                            ? '⚙️ Pentadbir'
+                                                            : '👤 Pelanggan'}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Menu items */}
+                                            <div className="py-1.5">
+                                                <DropdownLink href="/">
+                                                    Laman Utama
+                                                </DropdownLink>
+
+                                                <DropdownLink href="/dashboard">
+                                                    Papan pemuka
+                                                </DropdownLink>
+
+                                                {user.role === 'provider' && (
+                                                    <>
+                                                        <DropdownLink href="/provider/profile">
+                                                            Profil tukang
+                                                        </DropdownLink>
+                                                        <DropdownLink href="/provider/services">
+                                                            Perkhidmatan saya
+                                                        </DropdownLink>
+                                                    </>
+                                                )}
+
+                                                {user.role === 'customer' && (
+                                                    <>
+                                                        <DropdownLink href="/customer/bookings">
+                                                            Tempahan saya
+                                                        </DropdownLink>
+                                                        <DropdownLink href="/favorites">
+                                                            Tukang disimpan
+                                                        </DropdownLink>
+                                                    </>
+                                                )}
+
+                                                {user.role === 'admin' && (
+                                                    <DropdownLink href="/admin/providers">
+                                                        Urus tukang
+                                                    </DropdownLink>
+                                                )}
+
+                                                <DropdownLink href="/profile">
+                                                    Tetapan akaun
+                                                </DropdownLink>
+                                            </div>
+
+                                            {/* Logout */}
+                                            <div className="border-t border-stone-100 p-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={openLogoutModal}
+                                                    role="menuitem"
+                                                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                                                >
+                                                    <svg
+                                                        viewBox="0 0 16 16"
+                                                        className="h-4 w-4"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="1.6"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <path d="M10 2h3a1 1 0 011 1v10a1 1 0 01-1 1h-3" />
+                                                        <path d="M6 11l3-3-3-3" />
+                                                        <path d="M9 8H2" />
+                                                    </svg>
+                                                    Log keluar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
                         ) : (
                             /* ============ GUEST ============ */
                             <>

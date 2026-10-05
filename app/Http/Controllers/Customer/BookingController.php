@@ -46,6 +46,8 @@ class BookingController extends Controller
             'status' => 'requested',
         ]);
 
+        $booking->notifyStatusChange('Tempahan baharu diterima', onlyRole: 'provider');
+
         return redirect()->route('customer.bookings.show', $booking)
             ->with('success', 'Booking request sent!');
     }
