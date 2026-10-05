@@ -64,7 +64,7 @@ class BookingController extends Controller
 
     public function show(Booking $booking): Response
     {
-        abort_unless($booking->customer_id === auth()->id(), 403);
+        $this->authorize('view', $booking);
 
        return Inertia::render('Customer/Bookings/Show', [
             'booking' => $booking->load(['service', 'providerProfile.user', 'review', 'payment', 'messages.sender']),
@@ -83,9 +83,7 @@ class BookingController extends Controller
 
     public function confirm(Booking $booking): RedirectResponse
     {
-        abort_unless($booking->customer_id === auth()->id(), 403);
-        abort_unless($booking->status === 'work_done', 403);
-        abort_unless($booking->payment?->status === 'held', 403);
+        $this->authorize('confirm', $booking);
 
         $booking->update(['status' => 'completed']);
         $booking->payment->markAsReleased();
@@ -96,9 +94,7 @@ class BookingController extends Controller
 
     public function dispute(Request $request, Booking $booking): RedirectResponse
     {
-        abort_unless($booking->customer_id === auth()->id(), 403);
-        abort_unless($booking->status === 'work_done', 403);
-        abort_unless($booking->payment?->status === 'held', 403);
+        $this->authorize('dispute', $booking);
 
         $request->validate([
             'reason' => 'required|string|max:1000',

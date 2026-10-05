@@ -23,8 +23,7 @@ class BookingController extends Controller
 
     public function accept(Booking $booking): RedirectResponse
     {
-        $this->authorizeOwnership($booking);
-        abort_unless($booking->status === 'requested', 403);
+        $this->authorize('accept', $booking);
 
         $booking->update(['status' => 'accepted']);
         $booking->notifyStatusChange('Diterima oleh tukang', onlyRole: 'customer');
@@ -32,20 +31,19 @@ class BookingController extends Controller
         return back()->with('success', 'Booking accepted.');
     }
 
-    public function decline(Booking $booking): RedirectResponse
+   public function decline(Booking $booking): RedirectResponse
     {
-        $this->authorizeOwnership($booking);
-        abort_unless($booking->status === 'requested', 403);
+        $this->authorize('decline', $booking);
 
         $booking->update(['status' => 'declined']);
         $booking->notifyStatusChange('Ditolak oleh tukang', onlyRole: 'customer');
 
         return back()->with('success', 'Booking declined.');
-    }
+}
 
     public function markWorkDone(Request $request, Booking $booking): RedirectResponse
     {
-        $this->authorizeOwnership($booking);
+        $this->authorize('markWorkDone', $booking);
         abort_unless($booking->status === 'accepted', 403);
 
         if ($booking->service->price_type === 'hourly') {
@@ -77,7 +75,7 @@ class BookingController extends Controller
 
     public function show(Booking $booking): Response
     {
-        $this->authorizeOwnership($booking);
+        $this->authorize('view', $booking);
 
         return Inertia::render('Provider/Bookings/Show', [
             'booking' => $booking->load(['service', 'customer', 'payment', 'review', 'messages.sender']),

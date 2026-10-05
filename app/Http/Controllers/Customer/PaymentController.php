@@ -14,7 +14,7 @@ class PaymentController extends Controller
 {
     public function store(Booking $booking, BillplzService $billplz)
     {
-        abort_unless($booking->customer_id === auth()->id(), 403);
+        $this->authorize('pay', $booking);
 
         $isHourly = $booking->service->price_type === 'hourly';
 
