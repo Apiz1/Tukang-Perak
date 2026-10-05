@@ -494,20 +494,12 @@ export default function AdminLayout({ children, title, breadcrumb }) {
 
                                     <div className="admin-dropdown__body">
                                         <Link
-                                            href="/admin/settings"
+                                             href={route('profile.edit')}
                                             className="admin-dropdown__item"
                                             role="menuitem"
                                         >
                                             <Icon.User style={{ width: 16, height: 16 }} />
                                             Tetapan akaun
-                                        </Link>
-                                        <Link
-                                            href="/"
-                                            className="admin-dropdown__item"
-                                            role="menuitem"
-                                        >
-                                            <Icon.Home style={{ width: 16, height: 16 }} />
-                                            Laman utama
                                         </Link>
                                     </div>
 

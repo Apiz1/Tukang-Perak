@@ -272,9 +272,9 @@ export default function Home({ categories = [], featuredProviders = [] }) {
                                     >
                                         <div className="flex items-center gap-4 p-5">
                                             <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-emerald-100 text-lg font-semibold text-emerald-800">
-                                                {provider.avatar_url ? (
+                                                {provider.photo_path ? (
                                                     <img
-                                                        src={provider.avatar_url}
+                                                        src={`/storage/${provider.photo_path}`}
                                                         alt=""
                                                         className="h-full w-full object-cover"
                                                     />

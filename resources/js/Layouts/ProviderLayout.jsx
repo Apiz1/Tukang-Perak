@@ -529,20 +529,12 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
 
                                     <div className="provider-dropdown__body">
                                         <Link
-                                           href={route('provider.profile.edit')}
+                                            href={route('profile.edit')}
                                             className="provider-dropdown__item"
                                             role="menuitem"
                                         >
                                             <Icon.User style={{ width: 16, height: 16 }} />
                                             Tetapan akaun
-                                        </Link>
-                                        <Link
-                                            href="/"
-                                            className="provider-dropdown__item"
-                                            role="menuitem"
-                                        >
-                                            <Icon.Home style={{ width: 16, height: 16 }} />
-                                            Laman utama
                                         </Link>
                                     </div>
 
