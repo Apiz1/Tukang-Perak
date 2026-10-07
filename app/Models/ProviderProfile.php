@@ -32,4 +32,10 @@ class ProviderProfile extends Model
     {
         return $this->hasMany(Review::class);
     }
+
+    public function savedByCustomers(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'saved_providers', 'provider_profile_id', 'customer_id')
+            ->withTimestamps();
+    }
 }

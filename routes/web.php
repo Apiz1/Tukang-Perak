@@ -40,6 +40,10 @@ Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
 
         Route::patch('/bookings/{booking}/confirm', [\App\Http\Controllers\Customer\BookingController::class, 'confirm'])->name('bookings.confirm');
         Route::post('/bookings/{booking}/dispute', [\App\Http\Controllers\Customer\BookingController::class, 'dispute'])->name('bookings.dispute');
+
+        Route::get('/saved-providers', [\App\Http\Controllers\Customer\SavedProviderController::class, 'index'])->name('saved-providers.index');
+        Route::post('/providers/{providerProfile}/save', [\App\Http\Controllers\Customer\SavedProviderController::class, 'store'])->name('providers.save');
+        Route::delete('/providers/{providerProfile}/save', [\App\Http\Controllers\Customer\SavedProviderController::class, 'destroy'])->name('providers.unsave');
     });
 
    Route::middleware('role:provider')->prefix('provider')->name('provider.')->group(function () {

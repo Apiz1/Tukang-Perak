@@ -421,7 +421,7 @@ export default function MainLayout({ children }) {
                                                         <DropdownLink href="/customer/bookings">
                                                             Tempahan saya
                                                         </DropdownLink>
-                                                        <DropdownLink href="/favorites">
+                                                        <DropdownLink href="/customer/saved-providers">
                                                             Tukang disimpan
                                                         </DropdownLink>
                                                     </>

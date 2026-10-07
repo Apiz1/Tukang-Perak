@@ -1,4 +1,5 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
+import { useState } from 'react';
 import MainLayout from '@/Layouts/MainLayout';
 
 /* ---------- Small icons ---------- */
@@ -92,6 +93,18 @@ const Icon = {
             <path d="M3 5.5A2.5 2.5 0 015.5 3h9A2.5 2.5 0 0117 5.5v6a2.5 2.5 0 01-2.5 2.5H8l-5 3.5V5.5z" />
         </svg>
     ),
+    /* 🆕 Heart icons for save button */
+    Heart: (p) => (
+        <svg viewBox="0 0 20 20" fill="currentColor" {...p}>
+            <path d="M10 17s-7-4.5-7-9.5A3.5 3.5 0 0110 5a3.5 3.5 0 017 2.5C17 12.5 10 17 10 17z" />
+        </svg>
+    ),
+    HeartOutline: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M10 17s-7-4.5-7-9.5A3.5 3.5 0 0110 5a3.5 3.5 0 017 2.5C17 12.5 10 17 10 17z" />
+        </svg>
+    ),
 };
 
 /* ---------- Static label maps ---------- */
@@ -156,7 +169,7 @@ const getReviewerInitial = (review) =>
     getReviewerName(review).charAt(0).toUpperCase();
 
 /* ============================ PAGE ============================ */
-export default function Show({ provider }) {
+export default function Show({ provider, isSaved: initialSaved = false }) {
     const { auth } = usePage().props;
     const user = auth?.user ?? null;
 
@@ -174,6 +187,33 @@ export default function Show({ provider }) {
     const isCustomer = user?.role === 'customer';
     const isGuest = !user;
     const canBook = isCustomer;
+
+    /* 🆕 Save state */
+    const [saved, setSaved] = useState(initialSaved);
+    const [saving, setSaving] = useState(false);
+
+    const toggleSave = () => {
+        if (saving) return;
+        setSaving(true);
+
+        if (saved) {
+            router.delete(route('customer.providers.unsave', provider.id), {
+                preserveScroll: true,
+                onSuccess: () => setSaved(false),
+                onFinish: () => setSaving(false),
+            });
+        } else {
+            router.post(
+                route('customer.providers.save', provider.id),
+                {},
+                {
+                    preserveScroll: true,
+                    onSuccess: () => setSaved(true),
+                    onFinish: () => setSaving(false),
+                }
+            );
+        }
+    };
 
     return (
         <MainLayout>
@@ -216,15 +256,38 @@ export default function Show({ provider }) {
                                 </div>
                             </div>
 
-                            {provider?.user?.email && (
-                                <a
-                                    href={`mailto:${provider.user.email}`}
-                                    className="inline-flex items-center gap-2 self-start rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md sm:self-auto"
-                                >
-                                    <Icon.Mail style={{ width: 14, height: 14 }} />
-                                    Hubungi tukang
-                                </a>
-                            )}
+                            <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                                {/* 🆕 Save button — customers only */}
+                                {isCustomer && (
+                                    <button
+                                        type="button"
+                                        onClick={toggleSave}
+                                        disabled={saving}
+                                        className={`inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold shadow-sm transition ${
+                                            saved
+                                                ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                : 'border-stone-200 bg-white text-stone-700 hover:border-emerald-200 hover:text-emerald-700'
+                                        } disabled:cursor-not-allowed disabled:opacity-60`}
+                                    >
+                                        {saved ? (
+                                            <Icon.Heart style={{ width: 14, height: 14 }} />
+                                        ) : (
+                                            <Icon.HeartOutline style={{ width: 14, height: 14 }} />
+                                        )}
+                                        {saved ? 'Disimpan' : 'Simpan Tukang'}
+                                    </button>
+                                )}
+
+                                {provider?.user?.email && (
+                                    <a
+                                        href={`mailto:${provider.user.email}`}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md"
+                                    >
+                                        <Icon.Mail style={{ width: 14, height: 14 }} />
+                                        Hubungi tukang
+                                    </a>
+                                )}
+                            </div>
                         </div>
 
                         <div className="mt-5">
@@ -362,9 +425,8 @@ export default function Show({ provider }) {
                                                         {formatServicePrice(service)}
                                                     </p>
 
-                                                    {/* 🆕 Book button — role-aware */}
+                                                    {/* Book button — role-aware */}
                                                     {canBook ? (
-                                                        /* Customer: real book link */
                                                         <Link
                                                             href={`/services/${service.id}/book`}
                                                             className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md"
@@ -384,7 +446,6 @@ export default function Show({ provider }) {
                                                             />
                                                         </Link>
                                                     ) : isGuest ? (
-                                                        /* Guest: prompt to log in */
                                                         <Link
                                                             href="/login"
                                                             className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
@@ -398,7 +459,6 @@ export default function Show({ provider }) {
                                                             Log masuk untuk menempah
                                                         </Link>
                                                     ) : (
-                                                        /* Provider/Admin: disabled */
                                                         <span
                                                             title="Hanya pelanggan boleh menempah"
                                                             className="mt-2 inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-bold text-stone-400"
@@ -516,7 +576,7 @@ export default function Show({ provider }) {
                                                     </p>
                                                 )}
 
-                                                {/* 🆕 Provider reply */}
+                                                {/* Provider reply */}
                                                 {review.provider_reply && (
                                                     <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
                                                         <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">

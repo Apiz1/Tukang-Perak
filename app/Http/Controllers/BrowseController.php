@@ -35,7 +35,7 @@ class BrowseController extends Controller
     {
         abort_unless($providerProfile->status === 'approved', 404);
 
-       return Inertia::render('Providers/Show', [
+        return Inertia::render('Providers/Show', [
             'provider' => $providerProfile
                 ->loadAvg('reviews', 'rating')
                 ->loadCount('reviews')
@@ -44,6 +44,9 @@ class BrowseController extends Controller
                     'services' => fn ($q) => $q->where('is_active', true),
                     'reviews' => fn ($q) => $q->with('customer:id,name')->latest()->take(10),
                 ]),
+            'isSaved' => auth()->check() && auth()->user()->role === 'customer'
+                ? auth()->user()->savedProviders()->where('provider_profile_id', $providerProfile->id)->exists()
+                : false,
         ]);
     }
 }

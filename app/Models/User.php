@@ -39,4 +39,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Booking::class, 'customer_id');
     }
+
+    public function savedProviders(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(ProviderProfile::class, 'saved_providers', 'customer_id', 'provider_profile_id')
+            ->withTimestamps();
+    }
 }
