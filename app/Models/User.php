@@ -45,4 +45,14 @@ class User extends Authenticatable
         return $this->belongsToMany(ProviderProfile::class, 'saved_providers', 'customer_id', 'provider_profile_id')
             ->withTimestamps();
     }
+
+    public function reportsMade(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Report::class, 'reporter_id');
+    }
+
+    public function reportsReceived(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Report::class, 'provider_id');
+    }
 }

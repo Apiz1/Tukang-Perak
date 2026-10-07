@@ -78,6 +78,13 @@ const Icon = {
             <path d="M9 8H2" />
         </svg>
     ),
+    Flag: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+            strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M4 3v14" />
+            <path d="M4 4h9l-1.5 3L13 10H4" />
+        </svg>
+    ),
 };
 
 /* ---------- Navigation config (plain paths) ---------- */
@@ -95,6 +102,7 @@ const navSections = [
             { label: 'Tukang',   href: '/admin/providers', icon: 'Wrench' },
             { label: 'Pelanggan', href: '/admin/customers', icon: 'Users' },
             { label: 'Bayaran',  href: '/admin/payments',  icon: 'Card' },
+            { label: 'Aduan',  href: '/admin/reports',  icon: 'Flag' },
         ],
     },
 ];

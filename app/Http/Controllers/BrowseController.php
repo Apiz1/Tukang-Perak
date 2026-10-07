@@ -6,6 +6,7 @@ use App\Models\ProviderProfile;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Report;
 
 class BrowseController extends Controller
 {
@@ -47,6 +48,7 @@ class BrowseController extends Controller
             'isSaved' => auth()->check() && auth()->user()->role === 'customer'
                 ? auth()->user()->savedProviders()->where('provider_profile_id', $providerProfile->id)->exists()
                 : false,
+            'canReport' => auth()->check() && auth()->user()->can('create', [Report::class, $providerProfile]),
         ]);
     }
 }

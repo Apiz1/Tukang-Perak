@@ -93,7 +93,6 @@ const Icon = {
             <path d="M3 5.5A2.5 2.5 0 015.5 3h9A2.5 2.5 0 0117 5.5v6a2.5 2.5 0 01-2.5 2.5H8l-5 3.5V5.5z" />
         </svg>
     ),
-    /* 🆕 Heart icons for save button */
     Heart: (p) => (
         <svg viewBox="0 0 20 20" fill="currentColor" {...p}>
             <path d="M10 17s-7-4.5-7-9.5A3.5 3.5 0 0110 5a3.5 3.5 0 017 2.5C17 12.5 10 17 10 17z" />
@@ -103,6 +102,14 @@ const Icon = {
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
             <path d="M10 17s-7-4.5-7-9.5A3.5 3.5 0 0110 5a3.5 3.5 0 017 2.5C17 12.5 10 17 10 17z" />
+        </svg>
+    ),
+    /* 🆕 Flag icon for report button */
+    Flag: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M4 3v14" />
+            <path d="M4 4h9l-1.5 3L13 10H4" />
         </svg>
     ),
 };
@@ -169,7 +176,7 @@ const getReviewerInitial = (review) =>
     getReviewerName(review).charAt(0).toUpperCase();
 
 /* ============================ PAGE ============================ */
-export default function Show({ provider, isSaved: initialSaved = false }) {
+export default function Show({ provider, isSaved = false }) {
     const { auth } = usePage().props;
     const user = auth?.user ?? null;
 
@@ -180,16 +187,13 @@ export default function Show({ provider, isSaved: initialSaved = false }) {
     const rating = provider?.reviews_avg_rating ?? provider?.rating ?? provider?.average_rating ?? null;
     const reviewsCount = provider?.reviews_count ?? provider?.review_count ?? reviews.length ?? null;
 
-    /* Who can book?
-       - Logged-in customer: yes
-       - Guest: show a "Log masuk" CTA
-       - Provider/Admin: hidden — they can't book their own services */
+    /* Who can book? */
     const isCustomer = user?.role === 'customer';
     const isGuest = !user;
     const canBook = isCustomer;
 
-    /* 🆕 Save state */
-    const [saved, setSaved] = useState(initialSaved);
+    /* Save state */
+    const [saved, setSaved] = useState(isSaved);
     const [saving, setSaving] = useState(false);
 
     const toggleSave = () => {
@@ -257,7 +261,7 @@ export default function Show({ provider, isSaved: initialSaved = false }) {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                                {/* 🆕 Save button — customers only */}
+                                {/* Save button — customers only */}
                                 {isCustomer && (
                                     <button
                                         type="button"
@@ -425,7 +429,6 @@ export default function Show({ provider, isSaved: initialSaved = false }) {
                                                         {formatServicePrice(service)}
                                                     </p>
 
-                                                    {/* Book button — role-aware */}
                                                     {canBook ? (
                                                         <Link
                                                             href={`/services/${service.id}/book`}
@@ -576,7 +579,6 @@ export default function Show({ provider, isSaved: initialSaved = false }) {
                                                     </p>
                                                 )}
 
-                                                {/* Provider reply */}
                                                 {review.provider_reply && (
                                                     <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
                                                         <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
@@ -698,6 +700,43 @@ export default function Show({ provider, isSaved: initialSaved = false }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* 🆕 Report card — customers only */}
+                        {isCustomer && (
+                            <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-rose-100 text-rose-700">
+                                        <Icon.Flag style={{ width: 16, height: 16 }} />
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-rose-900">
+                                            Laporkan tukang
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-5 text-rose-800/90">
+                                            Jika anda menghadapi masalah dengan
+                                            tukang ini, laporkan kepada pasukan
+                                            kami untuk tindakan.
+                                        </p>
+
+                                        <Link
+                                            href={route(
+                                                'customer.providers.report.create',
+                                                provider.id
+                                            )}
+                                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+                                        >
+                                            <Icon.Flag
+                                                style={{ width: 12, height: 12 }}
+                                            />
+                                            Laporkan tukang
+                                            <Icon.ArrowRight
+                                                style={{ width: 11, height: 11 }}
+                                            />
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </aside>
                 </div>
             </div>

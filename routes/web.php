@@ -44,6 +44,9 @@ Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
         Route::get('/saved-providers', [\App\Http\Controllers\Customer\SavedProviderController::class, 'index'])->name('saved-providers.index');
         Route::post('/providers/{providerProfile}/save', [\App\Http\Controllers\Customer\SavedProviderController::class, 'store'])->name('providers.save');
         Route::delete('/providers/{providerProfile}/save', [\App\Http\Controllers\Customer\SavedProviderController::class, 'destroy'])->name('providers.unsave');
+
+        Route::get('/providers/{providerProfile}/report', [\App\Http\Controllers\Customer\ReportController::class, 'create'])->name('providers.report.create');
+        Route::post('/providers/{providerProfile}/report', [\App\Http\Controllers\Customer\ReportController::class, 'store'])->middleware('throttle:5,1')->name('providers.report.store');
     });
 
    Route::middleware('role:provider')->prefix('provider')->name('provider.')->group(function () {
@@ -115,6 +118,11 @@ Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
     Route::get('/customers/{user}', [\App\Http\Controllers\Admin\CustomerController::class, 'show'])->name('customers.show');
     Route::patch('/customers/{user}/suspend', [\App\Http\Controllers\Admin\CustomerController::class, 'suspend'])->name('customers.suspend');
     Route::patch('/customers/{user}/unsuspend', [\App\Http\Controllers\Admin\CustomerController::class, 'unsuspend'])->name('customers.unsuspend');
+    
+    Route::get('/reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'show'])->name('reports.show');
+    Route::patch('/reports/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'update'])->name('reports.update');
+        
     });
 });
 
