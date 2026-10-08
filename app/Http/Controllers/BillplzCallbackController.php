@@ -29,14 +29,21 @@ class BillplzCallbackController extends Controller
         $paid = ($data['paid'] ?? 'false') === 'true' && ($data['state'] ?? '') === 'paid';
 
         if ($paid) {
-            $expected = (int) round(((float) $payment->amount) * 100);
+                $expected = (int) round(((float) $payment->amount) * 100);
 
-            if ((int) ($data['paid_amount'] ?? 0) === $expected) {
-                $payment->markAsHeld($data['paid_at'] ?? null);
-            } else {
-                Log::error('Billplz callback: amount mismatch', ['payment' => $payment->id]);
+                if ((int) ($data['paid_amount'] ?? 0) === $expected) {
+                    if ($payment->markAsHeld($data['paid_at'] ?? null)) {
+                        try {
+                            $payment->booking->notifyPaymentReceived();
+                        } catch (\Throwable $e) {
+                            // Never fail the webhook over a notification problem
+                            report($e);
+                        }
+                    }
+                } else {
+                    Log::error('Billplz callback: amount mismatch', ['payment' => $payment->id]);
+                }
             }
-        }
 
         return response('OK');
     }

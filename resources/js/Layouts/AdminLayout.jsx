@@ -99,16 +99,16 @@ const navSections = [
     {
         label: 'Pengurusan',
         items: [
-            { label: 'Tukang',   href: '/admin/providers', icon: 'Wrench' },
+            { label: 'Tukang',    href: '/admin/providers', icon: 'Wrench', badge: 'providers' },
             { label: 'Pelanggan', href: '/admin/customers', icon: 'Users' },
-            { label: 'Bayaran',  href: '/admin/payments',  icon: 'Card' },
-            { label: 'Aduan',  href: '/admin/reports',  icon: 'Flag' },
+            { label: 'Bayaran',   href: '/admin/payments',  icon: 'Card',   badge: 'payments' },
+            { label: 'Aduan',     href: '/admin/reports',   icon: 'Flag',   badge: 'reports' },
         ],
     },
 ];
 
 export default function AdminLayout({ children, title, breadcrumb }) {
-    const { auth, url, notifications } = usePage().props;
+    const { auth, url, notifications, adminCounts } = usePage().props;
     const user = auth?.user ?? null;
 
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -117,12 +117,11 @@ export default function AdminLayout({ children, title, breadcrumb }) {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
 
-    /* 🆕 Notification state */
+    /* Notification state */
     const [notifOpen, setNotifOpen] = useState(false);
 
     const userMenuRef = useRef(null);
     const cancelBtnRef = useRef(null);
-    /* 🆕 Notification ref */
     const notifRef = useRef(null);
 
     /* ---------- Active route check ---------- */
@@ -149,7 +148,7 @@ export default function AdminLayout({ children, title, breadcrumb }) {
         };
     }, [userMenuOpen]);
 
-    /* 🆕 Close notification dropdown on outside click / Escape ---------- */
+    /* ---------- Close notification dropdown on outside click / Escape ---------- */
     useEffect(() => {
         if (!notifOpen) return;
         const onClick = (e) => {
@@ -169,7 +168,6 @@ export default function AdminLayout({ children, title, breadcrumb }) {
     /* ---------- Close on route change ---------- */
     useEffect(() => router.on('navigate', () => setUserMenuOpen(false)), []);
     useEffect(() => router.on('navigate', () => setMobileOpen(false)), []);
-    /* 🆕 Close notification dropdown on route change */
     useEffect(() => router.on('navigate', () => setNotifOpen(false)), []);
 
     /* ---------- Logout modal ---------- */
@@ -221,7 +219,7 @@ export default function AdminLayout({ children, title, breadcrumb }) {
         );
     };
 
-    /* 🆕 Notification handlers */
+    /* Notification handlers */
     const handleNotificationClick = (notif) => {
         router.patch(route('notifications.read', notif.id), {}, {
             preserveScroll: true,
@@ -238,6 +236,8 @@ export default function AdminLayout({ children, title, breadcrumb }) {
             preserveState: true,
         });
     };
+
+    const recentNotifications = notifications?.recent ?? [];
 
     return (
         <div className="admin-shell">
@@ -265,6 +265,10 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                             {section.items.map((item) => {
                                 const ItemIcon = Icon[item.icon];
                                 const active = isActive(item.href);
+                                const count = item.badge
+                                    ? adminCounts?.[item.badge] ?? 0
+                                    : 0;
+                                const showBadge = count > 0;
 
                                 return (
                                     <Link
@@ -280,6 +284,15 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                                         <span className="admin-nav-link__label">
                                             {item.label}
                                         </span>
+
+                                        {showBadge && (
+                                            <span
+                                                className="admin-nav-link__badge"
+                                                aria-label={`${count} item menunggu`}
+                                            >
+                                                {count > 99 ? '99+' : count}
+                                            </span>
+                                        )}
                                     </Link>
                                 );
                             })}
@@ -307,7 +320,6 @@ export default function AdminLayout({ children, title, breadcrumb }) {
             <div className="admin-main">
                 <header className="admin-topbar">
                     <div className="admin-topbar__left">
-                        {/* Mobile: open sidebar */}
                         <button
                             type="button"
                             className="admin-icon-btn lg:hidden"
@@ -317,7 +329,6 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                             <Icon.Menu style={{ width: 18, height: 18 }} />
                         </button>
 
-                        {/* Desktop: collapse toggle */}
                         <button
                             type="button"
                             className="admin-icon-btn hidden lg:grid"
@@ -342,7 +353,7 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                     </div>
 
                     <div className="admin-topbar__right">
-                        {/* 🆕 Notification bell with dropdown */}
+                        {/* Notification bell with dropdown */}
                         <div className="relative" ref={notifRef}>
                             <button
                                 type="button"
@@ -376,7 +387,17 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                             </button>
 
                             {notifOpen && (
-                                <div className="admin-dropdown" role="menu">
+                                <div
+                                    className="admin-dropdown"
+                                    role="menu"
+                                    style={{
+                                        width: '20rem',
+                                        maxWidth: 'calc(100vw - 2rem)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        overflow: 'hidden',
+                                    }}
+                                >
                                     <div className="admin-dropdown__header">
                                         <div className="flex items-center justify-between gap-3">
                                             <p className="admin-dropdown__name">
@@ -394,9 +415,15 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                                         </div>
                                     </div>
 
-                                    <div className="admin-dropdown__body">
-                                        {(!notifications?.recent ||
-                                            notifications.recent.length === 0) && (
+                                    <div
+                                        className="admin-dropdown__body"
+                                        style={{
+                                            maxHeight: '24rem',
+                                            overflowY: 'auto',
+                                            overscrollBehavior: 'contain',
+                                        }}
+                                    >
+                                        {recentNotifications.length === 0 && (
                                             <p
                                                 style={{
                                                     padding: 12,
@@ -408,7 +435,7 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                                             </p>
                                         )}
 
-                                        {notifications?.recent?.map((notif) => (
+                                        {recentNotifications.map((notif) => (
                                             <button
                                                 key={notif.id}
                                                 type="button"
@@ -422,7 +449,7 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                                                     width: '100%',
                                                 }}
                                             >
-                                                <div>
+                                                <div className="min-w-0">
                                                     <p
                                                         style={{
                                                             fontWeight: 600,

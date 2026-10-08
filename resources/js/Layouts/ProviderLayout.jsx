@@ -83,8 +83,8 @@ const navSections = [
         label: 'Utama',
         items: [
             { label: 'Papan pemuka', href: '/provider/dashboard', icon: 'Home' },
-            { label: 'Tempahan',     href: '/provider/bookings',  icon: 'Calendar', requiresApproved: true },
-            { label: 'Ulasan',       href: '/provider/reviews',   icon: 'Star',     requiresApproved: true },
+            { label: 'Tempahan',     href: '/provider/bookings',  icon: 'Calendar', requiresApproved: true, badge: 'bookings' },
+            { label: 'Ulasan',       href: '/provider/reviews',   icon: 'Star',     requiresApproved: true, badge: 'reviews' },
         ],
     },
     {
@@ -97,7 +97,7 @@ const navSections = [
 ];
 
 export default function ProviderLayout({ children, title, breadcrumb }) {
-    const { auth, url, notifications } = usePage().props;
+    const { auth, url, notifications, providerCounts } = usePage().props;
     const user = auth?.user ?? null;
 
     const providerStatus =
@@ -110,12 +110,11 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [loggingOut, setLoggingOut] = useState(false);
 
-    /* 🆕 Notification state */
+    /* Notification state */
     const [notifOpen, setNotifOpen] = useState(false);
 
     const userMenuRef = useRef(null);
     const cancelBtnRef = useRef(null);
-    /* 🆕 Notification ref */
     const notifRef = useRef(null);
 
     /* ---------- Active route check using current URL ---------- */
@@ -142,7 +141,7 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
         };
     }, [userMenuOpen]);
 
-    /* 🆕 Close notification dropdown on outside click / Escape ---------- */
+    /* ---------- Close notification dropdown on outside click / Escape ---------- */
     useEffect(() => {
         if (!notifOpen) return;
         const onClick = (e) => {
@@ -165,7 +164,7 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
     /* ---------- Close mobile sidebar on route change ---------- */
     useEffect(() => router.on('navigate', () => setMobileOpen(false)), []);
 
-    /* 🆕 Close notification dropdown on route change */
+    /* ---------- Close notification dropdown on route change ---------- */
     useEffect(() => router.on('navigate', () => setNotifOpen(false)), []);
 
     /* ---------- Logout modal: escape + scroll lock + autofocus ---------- */
@@ -217,7 +216,7 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
         );
     };
 
-    /* 🆕 Notification handlers */
+    /* Notification handlers */
     const handleNotificationClick = (notif) => {
         router.patch(route('notifications.read', notif.id), {}, {
             preserveScroll: true,
@@ -234,6 +233,9 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
             preserveState: true,
         });
     };
+
+    /* Convenience alias for the recent notifications list */
+    const recentNotifications = notifications?.recent ?? [];
 
     return (
         <div className="provider-shell">
@@ -267,6 +269,10 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                                 {visibleItems.map((item) => {
                                     const ItemIcon = Icon[item.icon];
                                     const active = isActive(item.href);
+                                    const count = item.badge
+                                        ? providerCounts?.[item.badge] ?? 0
+                                        : 0;
+                                    const showBadge = count > 0;
 
                                     return (
                                         <Link
@@ -282,6 +288,15 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                                             <span className="provider-nav-link__label">
                                                 {item.label}
                                             </span>
+
+                                            {showBadge && (
+                                                <span
+                                                    className="provider-nav-link__badge"
+                                                    aria-label={`${count} item menunggu`}
+                                                >
+                                                    {count > 99 ? '99+' : count}
+                                                </span>
+                                            )}
                                         </Link>
                                     );
                                 })}
@@ -365,7 +380,7 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                     </div>
 
                     <div className="provider-topbar__right">
-                        {/* 🆕 Notification bell with dropdown */}
+                        {/* Notification bell with dropdown */}
                         <div className="relative" ref={notifRef}>
                             <button
                                 type="button"
@@ -399,7 +414,17 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                             </button>
 
                             {notifOpen && (
-                                <div className="provider-dropdown" role="menu">
+                                <div
+                                    className="provider-dropdown"
+                                    role="menu"
+                                    style={{
+                                        width: '20rem',
+                                        maxWidth: 'calc(100vw - 2rem)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        overflow: 'hidden',
+                                    }}
+                                >
                                     <div className="provider-dropdown__header">
                                         <div className="flex items-center justify-between gap-3">
                                             <p className="provider-dropdown__name">
@@ -417,9 +442,15 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                                         </div>
                                     </div>
 
-                                    <div className="provider-dropdown__body">
-                                        {(!notifications?.recent ||
-                                            notifications.recent.length === 0) && (
+                                    <div
+                                        className="provider-dropdown__body"
+                                        style={{
+                                            maxHeight: '24rem',
+                                            overflowY: 'auto',
+                                            overscrollBehavior: 'contain',
+                                        }}
+                                    >
+                                        {recentNotifications.length === 0 && (
                                             <p
                                                 style={{
                                                     padding: 12,
@@ -431,7 +462,7 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                                             </p>
                                         )}
 
-                                        {notifications?.recent?.map((notif) => (
+                                        {recentNotifications.map((notif) => (
                                             <button
                                                 key={notif.id}
                                                 type="button"
@@ -445,7 +476,7 @@ export default function ProviderLayout({ children, title, breadcrumb }) {
                                                     width: '100%',
                                                 }}
                                             >
-                                                <div>
+                                                <div className="min-w-0">
                                                     <p
                                                         style={{
                                                             fontWeight: 600,

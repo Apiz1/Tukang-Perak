@@ -84,4 +84,13 @@ class Booking extends Model
             $this->providerProfile->user->notify(new \App\Notifications\BookingStatusNotification($this, $statusLabel, 'provider'));
         }
     }
+
+    public function notifyPaymentReceived(): void
+    {
+        $label = $this->service->price_type === 'hourly'
+            ? 'Bayaran diterima — menunggu pelanggan mengesahkan'
+            : 'Bayaran diterima — anda boleh mula kerja';
+
+        $this->notifyStatusChange($label, onlyRole: 'provider');
+    }
 }

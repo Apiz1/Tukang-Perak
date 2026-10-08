@@ -33,9 +33,12 @@ class Payment extends Model
     /**
      * Idempotent: callback and redirect may both arrive, in any order.
      */
-    public function markAsHeld(?string $paidAt = null): void
+    // app/Models/Payment.php
+    public function markAsHeld(?string $paidAt = null): bool
     {
-        DB::transaction(function () use ($paidAt) {
+        $transitioned = false;
+
+        DB::transaction(function () use ($paidAt, &$transitioned) {
             $payment = static::whereKey($this->id)->lockForUpdate()->first();
 
             if ($payment->status !== 'pending') {
@@ -46,9 +49,13 @@ class Payment extends Model
                 'status' => 'held',
                 'paid_at' => $paidAt ? Carbon::parse($paidAt) : now(),
             ]);
+
+            $transitioned = true;
         });
 
         $this->refresh();
+
+        return $transitioned;
     }
 
     public function markAsReleased(): void

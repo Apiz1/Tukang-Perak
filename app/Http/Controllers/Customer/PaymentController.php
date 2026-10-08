@@ -76,10 +76,12 @@ class PaymentController extends Controller
         abort_unless($payment && $payment->booking->customer_id === auth()->id(), 404);
 
         if ($billplz->verifySignature($params, 'billplz') && ($params['paid'] ?? '') === 'true') {
-            $payment->markAsHeld($params['paid_at'] ?? null);
+        if ($payment->markAsHeld($params['paid_at'] ?? null)) {
+            $payment->booking->notifyPaymentReceived();
+        }
 
-            return redirect()->route('customer.bookings.show', $payment->booking)
-                ->with('success', 'Payment received. Thank you!');
+        return redirect()->route('customer.bookings.show', $payment->booking)
+            ->with('success', 'Payment received. Thank you!');
         }
 
         return redirect()->route('customer.bookings.show', $payment->booking)

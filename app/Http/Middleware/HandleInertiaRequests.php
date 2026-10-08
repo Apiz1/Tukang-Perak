@@ -56,6 +56,15 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'adminCounts' => fn () => $request->user()?->role === 'admin' ? [
+                'payments'  => \App\Models\Payment::where('status', 'disputed')->count(),
+                'reports'   => \App\Models\Report::where('status', 'pending')->count(),
+                'providers' => \App\Models\ProviderProfile::where('status', 'pending')->count(),
+            ] : null,
+            'providerCounts' => fn () => ($request->user()?->role === 'provider' && $request->user()->providerProfile) ? [
+                'bookings' => $request->user()->providerProfile->bookings()->where('status', 'requested')->count(),
+                'reviews'  => $request->user()->providerProfile->reviews()->whereNull('replied_at')->count(),
+            ] : null,
         ];
     }
 }
