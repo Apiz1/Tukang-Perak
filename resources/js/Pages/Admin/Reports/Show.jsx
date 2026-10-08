@@ -86,7 +86,7 @@ const reasonLabels = {
     other:         'Lain-lain',
 };
 
-/* 🆕 Only two outcomes allowed by the controller's validation */
+/* Only the values that can exist in the reports table */
 const reportStatusConfig = {
     pending: {
         label: 'Menunggu',
@@ -104,6 +104,9 @@ const reportStatusConfig = {
         icon: Icon.Check,
     },
 };
+
+/* Only the statuses the controller accepts for updates */
+const ALLOWED_UPDATE_STATUSES = ['dismissed', 'action_taken'];
 
 /* ---------- Helpers ---------- */
 const formatDate = (date, style = 'long') => {
@@ -159,8 +162,15 @@ function DetailRow({ icon, label, value, multiline = false }) {
 
 /* ============================ PAGE ============================ */
 export default function Show({ report, providerReportCount = 0 }) {
+    /* 🆕 The form must start on a status the backend accepts.
+       If the report is still pending, leave the select empty and
+       force the admin to make an explicit choice. */
+    const initialStatus = ALLOWED_UPDATE_STATUSES.includes(report.status)
+        ? report.status
+        : '';
+
     const { data, setData, patch, processing, errors } = useForm({
-        status: report.status ?? 'dismissed',
+        status: initialStatus,
         admin_note: report.admin_note ?? '',
     });
 
@@ -179,8 +189,12 @@ export default function Show({ report, providerReportCount = 0 }) {
 
     const providerProfileId = report?.provider?.provider_profile?.id;
 
-    /* 🆕 The controller already counted all reports including this one */
+    /* The controller counts all reports including this one */
     const hasOtherReports = providerReportCount > 1;
+
+    /* Submit is only allowed once the admin has picked a status and written a note */
+    const canSubmit =
+        Boolean(data.status) && Boolean(data.admin_note.trim()) && !processing;
 
     return (
         <AdminLayout title="Butiran Laporan" breadcrumb="Pengurusan / Laporan">
@@ -331,6 +345,9 @@ export default function Show({ report, providerReportCount = 0 }) {
                                     required
                                     className="mt-2 w-full rounded-xl border border-[color:var(--line)] bg-white px-4 py-3 text-sm text-[color:var(--ink)] outline-none transition focus:border-[color:var(--green)] focus:ring-2 focus:ring-[color:var(--green)]/15"
                                 >
+                                    <option value="" disabled>
+                                        — Pilih tindakan —
+                                    </option>
                                     <option value="action_taken">
                                         Tindakan telah diambil
                                     </option>
@@ -394,7 +411,7 @@ export default function Show({ report, providerReportCount = 0 }) {
 
                                 <button
                                     type="submit"
-                                    disabled={processing || !data.admin_note.trim()}
+                                    disabled={!canSubmit}
                                     className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[color:var(--green)] px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[color:var(--green-dark)] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {processing ? (
