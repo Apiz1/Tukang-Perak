@@ -20,12 +20,13 @@ class ProfileController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $request->validate([
+       $request->validate([
             'business_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
             'category' => 'required|string|max:255',
             'district' => 'required|string|max:255',
             'photo' => 'nullable|image|max:2048',
+            'cover' => 'nullable|image|max:4096',
         ]);
 
         $profile = auth()->user()->providerProfile;
@@ -50,6 +51,14 @@ class ProfileController extends Controller
             }
 
             $data['photo_path'] = $request->file('photo')->store('provider-photos', 'public');
+        }
+
+        if ($request->hasFile('cover')) {
+            if ($profile->cover_path) {
+                Storage::disk('public')->delete($profile->cover_path);
+            }
+
+            $data['cover_path'] = $request->file('cover')->store('provider-covers', 'public');
         }
 
         $profile->update($data);

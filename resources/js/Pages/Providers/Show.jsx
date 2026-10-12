@@ -235,7 +235,16 @@ export default function Show({ provider, isSaved = false }) {
 
                 {/* ============ HERO CARD ============ */}
                 <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white">
-                    <div className="h-24 bg-gradient-to-br from-emerald-700 to-emerald-900 sm:h-28" />
+                    {/* Cover / background image */}
+                    <div className="h-40 w-full overflow-hidden bg-gradient-to-br from-emerald-700 to-emerald-900 sm:h-56">
+                        {provider?.cover_path && (
+                            <img
+                                src={`/storage/${provider.cover_path}`}
+                                alt=""
+                                className="h-full w-full object-cover"
+                            />
+                        )}
+                    </div>
 
                     <div className="px-5 pb-6 sm:px-8 sm:pb-8">
                         <div className="-mt-12 flex flex-col gap-4 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">

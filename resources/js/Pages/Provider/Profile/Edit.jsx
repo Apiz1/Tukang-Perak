@@ -69,6 +69,14 @@ const Icon = {
             <path d="M10 8.5v3.5M10 14.2h.01" />
         </svg>
     ),
+    Image: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="3" y="3" width="14" height="14" rx="2" />
+            <circle cx="7.5" cy="7.5" r="1.5" />
+            <path d="M17 13l-4-4-6 6" />
+        </svg>
+    ),
 };
 
 /* ---------- Option lists ---------- */
@@ -94,7 +102,9 @@ export default function Edit({ providerProfile }) {
     const { flash } = usePage().props;
 
     const fileInputRef = useRef(null);
+    const coverInputRef = useRef(null);
     const [previewUrl, setPreviewUrl] = useState(null);
+    const [coverPreviewUrl, setCoverPreviewUrl] = useState(null);
 
     /* Confirmation modal state */
     const [showConfirm, setShowConfirm] = useState(false);
@@ -108,6 +118,7 @@ export default function Edit({ providerProfile }) {
         category:      providerProfile?.category ?? 'aircon',
         district:      providerProfile?.district ?? 'ipoh',
         photo:         null,
+        cover:         null,
         _method:       'patch',
     });
 
@@ -117,6 +128,12 @@ export default function Edit({ providerProfile }) {
             if (previewUrl) URL.revokeObjectURL(previewUrl);
         };
     }, [previewUrl]);
+
+    useEffect(() => {
+        return () => {
+            if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+        };
+    }, [coverPreviewUrl]);
 
     /* Show toast when Laravel flashes a status message */
     useEffect(() => {
@@ -142,6 +159,21 @@ export default function Edit({ providerProfile }) {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
+    /* Cover file selection → preview */
+    const handleCoverFile = (e) => {
+        const file = e.target.files?.[0] ?? null;
+        if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+        setCoverPreviewUrl(file ? URL.createObjectURL(file) : null);
+        setData('cover', file);
+    };
+
+    const clearCoverFile = () => {
+        if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+        setCoverPreviewUrl(null);
+        setData('cover', null);
+        if (coverInputRef.current) coverInputRef.current.value = '';
+    };
+
     /* Submit flow: form → modal → PATCH */
     const askSubmit = (e) => {
         e.preventDefault();
@@ -154,8 +186,11 @@ export default function Edit({ providerProfile }) {
             preserveScroll: true,
             onSuccess: () => {
                 if (fileInputRef.current) fileInputRef.current.value = '';
+                if (coverInputRef.current) coverInputRef.current.value = '';
                 if (previewUrl) URL.revokeObjectURL(previewUrl);
+                if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
                 setPreviewUrl(null);
+                setCoverPreviewUrl(null);
                 setShowConfirm(false);
 
                 setToast({ type: 'success', message: 'Profil berjaya dikemas kini.' });
@@ -178,6 +213,12 @@ export default function Edit({ providerProfile }) {
         ? previewUrl
         : providerProfile?.photo_path
         ? `/storage/${providerProfile.photo_path}`
+        : null;
+
+    const displayCover = coverPreviewUrl
+        ? coverPreviewUrl
+        : providerProfile?.cover_path
+        ? `/storage/${providerProfile.cover_path}`
         : null;
 
     const businessInitial = data.business_name?.charAt(0)?.toUpperCase() || 'T';
@@ -303,6 +344,91 @@ export default function Edit({ providerProfile }) {
                                     {errors.photo && (
                                         <p className="mt-2 text-xs font-semibold text-rose-600">
                                             {errors.photo}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ============ COVER ============ */}
+                    <div className="provider-card">
+                        <div className="provider-card__header">
+                            <div className="flex items-center gap-3">
+                                <span className="grid h-9 w-9 place-items-center rounded-lg bg-[color:var(--lime)] text-[color:var(--green-dark)]">
+                                    <Icon.Image style={{ width: 16, height: 16 }} />
+                                </span>
+                                <div>
+                                    <h2 className="provider-card__title">
+                                        Gambar latar
+                                    </h2>
+                                    <p className="mt-0.5 text-xs text-[color:var(--muted)]">
+                                        JPG atau PNG, saiz maksimum 4MB
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="provider-card__body">
+                            <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+                                <div className="relative">
+                                    <div className="grid h-24 w-40 shrink-0 place-items-center overflow-hidden rounded-2xl border border-[color:var(--line)] bg-[color:var(--paper)] text-[color:var(--muted)]">
+                                        {displayCover ? (
+                                            <img
+                                                src={displayCover}
+                                                alt="Gambar latar"
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <Icon.Image style={{ width: 20, height: 20 }} />
+                                        )}
+                                    </div>
+                                    {coverPreviewUrl && (
+                                        <span className="absolute -right-1.5 -top-1.5 rounded-full bg-[color:var(--green)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                                            Baharu
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                    <input
+                                        ref={coverInputRef}
+                                        id="cover"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleCoverFile}
+                                        className="sr-only"
+                                    />
+
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <label
+                                            htmlFor="cover"
+                                            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[color:var(--line)] bg-white px-4 py-2.5 text-sm font-bold text-[color:var(--ink)] transition hover:border-[#a9cdb4] hover:text-[color:var(--green)]"
+                                        >
+                                            <Icon.Upload style={{ width: 14, height: 14 }} />
+                                            Pilih gambar latar
+                                        </label>
+
+                                        {coverPreviewUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={clearCoverFile}
+                                                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+                                            >
+                                                <Icon.Trash style={{ width: 12, height: 12 }} />
+                                                Buang
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <p className="mt-2 text-xs text-[color:var(--muted)]">
+                                        Gambar landskap berukuran 1200×400 atau lebih
+                                        besar memberi paparan terbaik.
+                                    </p>
+
+                                    {errors.cover && (
+                                        <p className="mt-2 text-xs font-semibold text-rose-600">
+                                            {errors.cover}
                                         </p>
                                     )}
                                 </div>
