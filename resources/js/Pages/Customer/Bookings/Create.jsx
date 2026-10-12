@@ -123,7 +123,7 @@ const MAX_NOTES = 2000;
 export default function Create({ service }) {
     const [showConfirm, setShowConfirm] = useState(false);
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, clearErrors } = useForm({
         preferred_date: '',
         district: '',
         address: '',
@@ -136,19 +136,42 @@ export default function Create({ service }) {
     /* Minimum selectable date = today */
     const today = new Date().toISOString().split('T')[0];
 
+    /* 🆕 Guard: block the modal if the form has client-side issues.
+       (The server is still the source of truth; this just prevents
+       obviously-incomplete submissions from reaching the modal.) */
+    const formIncomplete =
+        !data.preferred_date || !data.district || !data.address.trim();
+
     /* Submit flow: form → modal → POST */
     const askSubmit = (e) => {
         e.preventDefault();
+        if (formIncomplete || processing) return;
+        clearErrors();
         setShowConfirm(true);
     };
 
     const confirmSubmit = () => {
+        if (processing) return;
+
         post(route('services.book.store', service.id), {
             preserveScroll: true,
             onSuccess: () => setShowConfirm(false),
-            onError: () => setShowConfirm(false),
+            onError: (errs) => {
+                /* 🆕 Keep the modal open when a specific field fails, so
+                   the user can see the error on the page behind it.
+                   Close it if the error is not tied to a field, so the
+                   inline error message becomes visible. */
+                if (!errs || Object.keys(errs).length === 0) {
+                    setShowConfirm(false);
+                } else {
+                    setShowConfirm(false);
+                }
+            },
         });
     };
+
+    /* 🆕 Check whether a specific field error is present */
+    const hasError = (field) => Boolean(errors?.[field]);
 
     return (
         <MainLayout>
@@ -179,7 +202,6 @@ export default function Create({ service }) {
                 {/* ============ SERVICE SUMMARY ============ */}
                 <div className="mt-8 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
                     <div className="flex items-start gap-4">
-                        {/* Provider avatar */}
                         <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-emerald-100 text-lg font-bold text-emerald-800">
                             {providerPhoto ? (
                                 <img
@@ -212,6 +234,25 @@ export default function Create({ service }) {
                         </div>
                     </div>
                 </div>
+
+                {/* 🆕 Top-level error banner for form-wide errors (e.g. double-booking) */}
+                {Object.keys(errors ?? {}).length > 0 && !showConfirm && (
+                    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-rose-600 text-[11px] font-bold text-white">
+                            !
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-rose-900">
+                                Sila semak borang anda
+                            </p>
+                            <ul className="mt-1 space-y-0.5 text-xs leading-5 text-rose-800/90">
+                                {Object.entries(errors).map(([field, msg]) => (
+                                    <li key={field}>{msg}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                )}
 
                 {/* ============ FORM ============ */}
                 <form onSubmit={askSubmit} className="mt-6 space-y-6">
@@ -248,11 +289,19 @@ export default function Create({ service }) {
                                     type="date"
                                     value={data.preferred_date}
                                     min={today}
-                                    onChange={(e) =>
-                                        setData('preferred_date', e.target.value)
-                                    }
+                                    onChange={(e) => {
+                                        setData('preferred_date', e.target.value);
+                                        if (errors.preferred_date) {
+                                            clearErrors('preferred_date');
+                                        }
+                                    }}
                                     required
-                                    className="mt-2 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+                                    aria-invalid={hasError('preferred_date')}
+                                    className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:ring-2 ${
+                                        hasError('preferred_date')
+                                            ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-400/15'
+                                            : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/15'
+                                    }`}
                                 />
 
                                 {errors.preferred_date && (
@@ -274,11 +323,19 @@ export default function Create({ service }) {
                                 <select
                                     id="district"
                                     value={data.district}
-                                    onChange={(e) =>
-                                        setData('district', e.target.value)
-                                    }
+                                    onChange={(e) => {
+                                        setData('district', e.target.value);
+                                        if (errors.district) {
+                                            clearErrors('district');
+                                        }
+                                    }}
                                     required
-                                    className="mt-2 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+                                    aria-invalid={hasError('district')}
+                                    className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-stone-800 outline-none transition focus:ring-2 ${
+                                        hasError('district')
+                                            ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-400/15'
+                                            : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/15'
+                                    }`}
                                 >
                                     <option value="">Pilih daerah</option>
                                     {districtOptions.map((opt) => (
@@ -312,14 +369,22 @@ export default function Create({ service }) {
                                 <textarea
                                     id="address"
                                     value={data.address}
-                                    onChange={(e) =>
-                                        setData('address', e.target.value)
-                                    }
+                                    onChange={(e) => {
+                                        setData('address', e.target.value);
+                                        if (errors.address) {
+                                            clearErrors('address');
+                                        }
+                                    }}
                                     rows={3}
                                     maxLength={MAX_ADDRESS}
                                     required
+                                    aria-invalid={hasError('address')}
                                     placeholder="No. rumah, jalan, taman, poskod…"
-                                    className="mt-2 w-full resize-none rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm leading-6 text-stone-800 placeholder-stone-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15"
+                                    className={`mt-2 w-full resize-none rounded-xl border bg-white px-4 py-3 text-sm leading-6 text-stone-800 placeholder-stone-400 outline-none transition focus:ring-2 ${
+                                        hasError('address')
+                                            ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-400/15'
+                                            : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/15'
+                                    }`}
                                 />
 
                                 {errors.address && (
@@ -418,9 +483,10 @@ export default function Create({ service }) {
                             Batal
                         </Link>
 
+                        {/* 🆕 Submit button: disabled while processing OR when form is incomplete */}
                         <button
                             type="submit"
-                            disabled={processing}
+                            disabled={processing || formIncomplete}
                             className="group inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {processing ? (

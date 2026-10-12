@@ -9,6 +9,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class BookingController extends Controller
 {
@@ -34,17 +36,39 @@ class BookingController extends Controller
             'notes' => 'nullable|string|max:2000',
         ]);
 
-        $booking = Booking::create([
-            'customer_id' => auth()->id(),
-            'provider_profile_id' => $service->provider_profile_id,
-            'service_id' => $service->id,
-            'preferred_date' => $request->preferred_date,
-            'district' => $request->district,
-            'address' => $request->address,
-            'notes' => $request->notes,
-            'price' => $service->base_price,
-            'status' => 'requested',
-        ]);
+        $booking = DB::transaction(function () use ($request, $service) {
+            // Serialize concurrent submits from the same customer: a second request
+            // waits here until the first one commits, then sees its booking.
+            User::whereKey(auth()->id())->lockForUpdate()->first();
+
+            $alreadyRequested = Booking::where('customer_id', auth()->id())
+                ->where('service_id', $service->id)
+                ->whereDate('preferred_date', $request->preferred_date)
+                ->whereIn('status', ['requested', 'accepted', 'work_done'])
+                ->exists();
+
+            if ($alreadyRequested) {
+                return null;
+            }
+
+            return Booking::create([
+                'customer_id' => auth()->id(),
+                'provider_profile_id' => $service->provider_profile_id,
+                'service_id' => $service->id,
+                'preferred_date' => $request->preferred_date,
+                'district' => $request->district,
+                'address' => $request->address,
+                'notes' => $request->notes,
+                'price' => $service->base_price,
+                'status' => 'requested',
+            ]);
+        });
+
+        if (! $booking) {
+            return back()->withErrors([
+                'preferred_date' => 'Anda sudah mempunyai tempahan untuk perkhidmatan ini pada tarikh tersebut.',
+            ])->withInput();
+        }
 
         $booking->notifyStatusChange('Tempahan baharu diterima', onlyRole: 'provider');
 
