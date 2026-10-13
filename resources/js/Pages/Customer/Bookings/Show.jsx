@@ -179,6 +179,13 @@ const statusConfig = {
         icon: Icon.X,
         hint: 'Tempahan ini telah dibatalkan.',
     },
+    /* 🆕 Provider declined the request */
+    declined: {
+        label: 'Ditolak oleh tukang',
+        cls: 'border-rose-200 bg-rose-50 text-rose-800',
+        icon: Icon.X,
+        hint: 'Tukang tidak dapat menerima tempahan ini. Sila cuba tukang lain atau buat tempahan baharu.',
+    },
 };
 
 /* ---------- Helpers ---------- */
