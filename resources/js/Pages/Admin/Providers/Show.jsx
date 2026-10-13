@@ -232,8 +232,16 @@ export default function Show({ provider }) {
             {/* ============ HERO CARD ============ */}
             <div className="admin-card overflow-hidden">
                 <div className="relative">
-                    {/* Cover strip */}
-                    <div className="h-24 bg-gradient-to-br from-[color:var(--green)] to-[color:var(--green-dark)]" />
+                    {/* Cover strip — uses provider.cover_path if present, otherwise keeps the existing emerald gradient */}
+                    <div className="h-40 w-full overflow-hidden bg-gradient-to-br from-[color:var(--green)] to-[color:var(--green-dark)] sm:h-56">
+                        {provider.cover_path && (
+                            <img
+                                src={`/storage/${provider.cover_path}`}
+                                alt=""
+                                className="h-full w-full object-cover"
+                            />
+                        )}
+                    </div>
 
                     <div className="relative px-5 pb-5 sm:px-7 sm:pb-7">
                         {/* Avatar overlapping the cover */}
