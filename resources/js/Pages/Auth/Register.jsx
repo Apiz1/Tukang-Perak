@@ -20,6 +20,28 @@ const districtOptions = [
     { value: 'teluk_intan',   label: 'Teluk Intan' },
 ];
 
+/* 🆕 Provider document fields — mirrors what the controller iterates over */
+const documentFields = [
+    {
+        name: 'identity_document',
+        label: 'Salinan kad pengenalan (IC)',
+        hint: 'JPG, PNG, atau PDF — saiz maksimum 4MB',
+        required: true,
+    },
+    {
+        name: 'ssm_document',
+        label: 'Sijil SSM',
+        hint: 'JPG, PNG, atau PDF — saiz maksimum 4MB',
+        required: true,
+    },
+    {
+        name: 'certificate_document',
+        label: 'Sijil kemahiran (pilihan)',
+        hint: 'JPG, PNG, atau PDF — saiz maksimum 4MB',
+        required: false,
+    },
+];
+
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -28,6 +50,10 @@ export default function Register() {
         role: 'customer',
         category: '',
         district: '',
+        /* 🆕 Provider documents */
+        identity_document: null,
+        ssm_document: null,
+        certificate_document: null,
         password: '',
         password_confirmation: '',
     });
@@ -36,6 +62,7 @@ export default function Register() {
         event.preventDefault();
 
         post(route('register'), {
+            forceFormData: true,
             onFinish: () => reset('password', 'password_confirmation'),
         });
     };
@@ -187,6 +214,9 @@ export default function Register() {
                                                 if (event.target.value === 'customer') {
                                                     setData('category', '');
                                                     setData('district', '');
+                                                    setData('identity_document', null);
+                                                    setData('ssm_document', null);
+                                                    setData('certificate_document', null);
                                                 }
                                             }}
                                             className="sr-only"
@@ -322,6 +352,41 @@ export default function Register() {
 
                                 <InputError message={errors.district} className="mt-2" />
                             </div>
+
+                            {/* 🆕 Documents */}
+                            {documentFields.map((field) => (
+                                <div key={field.name}>
+                                    <InputLabel
+                                        htmlFor={field.name}
+                                        value={field.label}
+                                        className="!text-sm !font-semibold !text-stone-700"
+                                    />
+
+                                    <input
+                                        id={field.name}
+                                        name={field.name}
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        onChange={(event) =>
+                                            setData(
+                                                field.name,
+                                                event.target.files?.[0] ?? null
+                                            )
+                                        }
+                                        required={field.required}
+                                        className="auth-input mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-700 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-emerald-800"
+                                    />
+
+                                    <p className="mt-1 text-xs text-emerald-800/70">
+                                        {field.hint}
+                                    </p>
+
+                                    <InputError
+                                        message={errors[field.name]}
+                                        className="mt-2"
+                                    />
+                                </div>
+                            ))}
                         </div>
                     )}
 

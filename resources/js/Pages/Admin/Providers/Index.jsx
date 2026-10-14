@@ -131,6 +131,7 @@ export default function Index({ providers, filters = {} }) {
 
     const [confirmAction, setConfirmAction] = useState(null);
     const [suspensionReason, setSuspensionReason] = useState('');
+    const [rejectionReason, setRejectionReason] = useState('');
 
     const rows = providers?.data ?? [];
 
@@ -150,22 +151,16 @@ export default function Index({ providers, filters = {} }) {
 
     const pendingCount = rows.filter((p) => p.status === 'pending').length;
 
-    const askApprove = (profile) => {
+    const openConfirm = (type, profile) => {
         setSuspensionReason('');
-        setConfirmAction({ type: 'approve', provider: profile });
+        setRejectionReason('');
+        setConfirmAction({ type, provider: profile });
     };
-    const askReject = (profile) => {
-        setSuspensionReason('');
-        setConfirmAction({ type: 'reject', provider: profile });
-    };
-    const askSuspend = (profile) => {
-        setSuspensionReason('');
-        setConfirmAction({ type: 'suspend', provider: profile });
-    };
-    const askUnsuspend = (profile) => {
-        setSuspensionReason('');
-        setConfirmAction({ type: 'unsuspend', provider: profile });
-    };
+
+    const askApprove = (profile) => openConfirm('approve', profile);
+    const askReject = (profile) => openConfirm('reject', profile);
+    const askSuspend = (profile) => openConfirm('suspend', profile);
+    const askUnsuspend = (profile) => openConfirm('unsuspend', profile);
 
     const runConfirmedAction = () => {
         if (!confirmAction) return;
@@ -181,12 +176,18 @@ export default function Index({ providers, filters = {} }) {
                 setProcessing(null);
                 setConfirmAction(null);
                 setSuspensionReason('');
+                setRejectionReason('');
             },
         };
 
         const requests = {
             approve: () => router.patch(route('admin.providers.approve', id), {}, opts),
-            reject:  () => router.patch(route('admin.providers.reject', id), {}, opts),
+            reject:  () =>
+                router.patch(
+                    route('admin.providers.reject', id),
+                    { rejection_reason: rejectionReason },
+                    opts
+                ),
             suspend: () =>
                 router.patch(
                     route('admin.providers.suspend', id),
@@ -327,7 +328,6 @@ export default function Index({ providers, filters = {} }) {
                                 <tbody className="divide-y divide-[color:var(--line)]">
                                     {filtered.map((profile) => (
                                         <tr key={profile.id} className="transition hover:bg-[color:var(--paper)]/40">
-                                            {/* 🆕 Name is now a link to the show page */}
                                             <td className="px-4 py-3.5">
                                                 <Link
                                                     href={route('admin.providers.show', profile.id)}
@@ -374,10 +374,17 @@ export default function Index({ providers, filters = {} }) {
                                                             “{profile.suspension_reason}”
                                                         </span>
                                                     )}
+                                                    {profile.status === 'rejected' && profile.rejection_reason && (
+                                                        <span
+                                                            className="max-w-[220px] truncate text-[11px] italic text-[color:var(--muted)]"
+                                                            title={profile.rejection_reason}
+                                                        >
+                                                            “{profile.rejection_reason}”
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
 
-                                            {/* 🆕 Actions column: Lihat + status actions */}
                                             <td className="px-4 py-3.5">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <Link
@@ -449,7 +456,12 @@ export default function Index({ providers, filters = {} }) {
                                                 </p>
                                             )}
 
-                                            {/* 🆕 Mobile: Lihat + action buttons */}
+                                            {profile.status === 'rejected' && profile.rejection_reason && (
+                                                <p className="mt-2 rounded-md bg-rose-50 px-2.5 py-1.5 text-xs italic text-rose-700">
+                                                    Sebab: {profile.rejection_reason}
+                                                </p>
+                                            )}
+
                                             <div className="mt-3 flex flex-col gap-2">
                                                 <Link
                                                     href={route('admin.providers.show', profile.id)}
@@ -530,12 +542,21 @@ export default function Index({ providers, filters = {} }) {
                 <ConfirmModal
                     action={confirmAction}
                     processing={processing === confirmAction.provider.id}
-                    reason={suspensionReason}
-                    onReasonChange={setSuspensionReason}
+                    reason={
+                        confirmAction.type === 'reject'
+                            ? rejectionReason
+                            : suspensionReason
+                    }
+                    onReasonChange={
+                        confirmAction.type === 'reject'
+                            ? setRejectionReason
+                            : setSuspensionReason
+                    }
                     onCancel={() => {
                         if (processing) return;
                         setConfirmAction(null);
                         setSuspensionReason('');
+                        setRejectionReason('');
                     }}
                     onConfirm={runConfirmedAction}
                 />
@@ -683,8 +704,16 @@ function ConfirmModal({ action, processing, reason, onReasonChange, onCancel, on
         },
     }[config.tone];
 
-    const requiresReason = type === 'suspend';
+    /* 🆕 Reject and suspend both require a reason, matching controller validation */
+    const requiresReason = type === 'suspend' || type === 'reject';
     const reasonTooShort = requiresReason && reason.trim().length < 5;
+
+    const reasonLabel =
+        type === 'reject' ? 'Sebab penolakan' : 'Sebab penggantungan';
+    const reasonPlaceholder =
+        type === 'reject'
+            ? 'Contoh: Dokumen tidak lengkap atau tidak sah. Sila muat naik semula.'
+            : 'Contoh: Aduan pelanggan berulang kali tentang kerja tidak siap.';
 
     useEffect(() => {
         const onKey = (e) => {
@@ -739,16 +768,17 @@ function ConfirmModal({ action, processing, reason, onReasonChange, onCancel, on
 
                     {requiresReason && (
                         <div className="mt-4">
-                            <label htmlFor="suspension_reason" className="block text-xs font-bold uppercase tracking-wide text-[color:var(--muted)]">
-                                Sebab penggantungan
+                            <label htmlFor="confirm_reason" className="block text-xs font-bold uppercase tracking-wide text-[color:var(--muted)]">
+                                {reasonLabel}
                             </label>
                             <textarea
-                                id="suspension_reason"
+                                id="confirm_reason"
                                 value={reason}
                                 onChange={(e) => onReasonChange(e.target.value)}
                                 rows={3}
-                                maxLength={300}
-                                placeholder="Contoh: Aduan pelanggan berulang kali tentang kerja tidak siap."
+                                maxLength={1000}
+                                required
+                                placeholder={reasonPlaceholder}
                                 className="mt-1.5 w-full resize-none rounded-xl border border-[color:var(--line)] bg-white px-3 py-2.5 text-sm leading-6 text-[color:var(--ink)] placeholder-[color:var(--muted)] outline-none transition focus:border-[color:var(--green)] focus:ring-2 focus:ring-[color:var(--green)]/15"
                             />
                             <div className="mt-1 flex items-center justify-between text-[11px] text-[color:var(--muted)]">
@@ -757,7 +787,7 @@ function ConfirmModal({ action, processing, reason, onReasonChange, onCancel, on
                                         ? 'Sekurang-kurangnya 5 aksara.'
                                         : 'Sebab ini akan dipaparkan kepada tukang.'}
                                 </span>
-                                <span>{reason.length}/300</span>
+                                <span>{reason.length}/1000</span>
                             </div>
                         </div>
                     )}

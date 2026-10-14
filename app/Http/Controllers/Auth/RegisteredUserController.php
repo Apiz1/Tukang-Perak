@@ -38,6 +38,9 @@ class RegisteredUserController extends Controller
             'role' => 'required|in:customer,provider',
             'category' => 'required_if:role,provider|nullable|string|max:255',
             'district' => 'required_if:role,provider|nullable|string|max:255',
+            'identity_document' => 'required_if:role,provider|nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'ssm_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'certificate_document' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -54,6 +57,12 @@ class RegisteredUserController extends Controller
             'category' => $request->category,
             'district' => $request->district,
         ]);
+
+        foreach (['identity', 'ssm', 'certificate'] as $type) {
+            if ($request->hasFile("{$type}_document")) {
+                $providerProfile->storeDocument($type, $request->file("{$type}_document"));
+            }
+        }
 
         $admins = User::where('role', 'admin')->get();
         \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\AdminAlertNotification(

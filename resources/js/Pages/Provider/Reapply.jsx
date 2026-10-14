@@ -17,6 +17,25 @@ const districtOptions = [
     { value: 'teluk_intan',   label: 'Teluk Intan' },
 ];
 
+/* Document fields — mirrors the controller's ['identity', 'ssm', 'certificate'] loop */
+const documentFields = [
+    {
+        name: 'identity_document',
+        label: 'Salinan kad pengenalan (IC)',
+        hint: 'PDF, JPG, atau PNG — saiz maksimum 4MB',
+    },
+    {
+        name: 'ssm_document',
+        label: 'Sijil SSM',
+        hint: 'PDF, JPG, atau PNG — saiz maksimum 4MB',
+    },
+    {
+        name: 'certificate_document',
+        label: 'Sijil kemahiran (pilihan)',
+        hint: 'PDF, JPG, atau PNG — saiz maksimum 4MB',
+    },
+];
+
 /* ---------- Small icons ---------- */
 const Icon = {
     Alert: (p) => (
@@ -58,19 +77,29 @@ const Icon = {
             <path d="M10 9v5M10 6.2h.01" />
         </svg>
     ),
+    Upload: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M10 14V4M6 8l4-4 4 4M4 16h12" />
+        </svg>
+    ),
 };
 
 export default function Reapply({ providerProfile }) {
     const { flash } = usePage().props;
 
-    const { data, setData, patch, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
+        _method: 'patch',
         category: providerProfile?.category ?? '',
         district: providerProfile?.district ?? '',
+        identity_document: null,
+        ssm_document: null,
+        certificate_document: null,
     });
 
     const submit = (e) => {
         e.preventDefault();
-        patch(route('provider.reapply.update'));
+        post(route('provider.reapply.update'), { forceFormData: true });
     };
 
     const reason = providerProfile?.rejection_reason;
@@ -237,6 +266,61 @@ export default function Reapply({ providerProfile }) {
                                     </p>
                                 )}
                             </div>
+                        </div>
+                    </div>
+
+                    {/* ============ DOCUMENTS CARD ============ */}
+                    <div className="provider-card">
+                        <div className="provider-card__header">
+                            <div className="flex items-center gap-3">
+                                <span className="grid h-9 w-9 place-items-center rounded-lg bg-[color:var(--lime)] text-[color:var(--green-dark)]">
+                                    <Icon.Upload style={{ width: 16, height: 16 }} />
+                                </span>
+                                <div>
+                                    <h2 className="provider-card__title">
+                                        Dokumen sokongan
+                                    </h2>
+                                    <p className="mt-0.5 text-xs text-[color:var(--muted)]">
+                                        Muat naik semula dokumen yang dikemas kini
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="provider-card__body space-y-5">
+                            {documentFields.map((field) => (
+                                <div key={field.name}>
+                                    <label
+                                        htmlFor={field.name}
+                                        className="block text-sm font-semibold text-[color:var(--ink)]"
+                                    >
+                                        {field.label}
+                                    </label>
+                                    <p className="mt-0.5 text-xs text-[color:var(--muted)]">
+                                        {field.hint}
+                                    </p>
+
+                                    <input
+                                        id={field.name}
+                                        name={field.name}
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        onChange={(e) =>
+                                            setData(
+                                                field.name,
+                                                e.target.files?.[0] ?? null
+                                            )
+                                        }
+                                        className="mt-2 block w-full cursor-pointer rounded-xl border border-[color:var(--line)] bg-white text-sm text-[color:var(--ink)] file:mr-3 file:rounded-l-xl file:border-0 file:bg-[color:var(--green)] file:px-4 file:py-3 file:text-xs file:font-bold file:text-white hover:file:bg-[color:var(--green-dark)] focus:border-[color:var(--green)] focus:outline-none focus:ring-2 focus:ring-[color:var(--green)]/15"
+                                    />
+
+                                    {errors[field.name] && (
+                                        <p className="mt-2 text-xs font-semibold text-rose-600">
+                                            {errors[field.name]}
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
 

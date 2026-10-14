@@ -106,6 +106,8 @@ Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
         ->name('providers.unsuspend');
     Route::get('/providers/{providerProfile}', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'show'])
         ->name('providers.show');
+    Route::get('/providers/{providerProfile}/documents/{document}', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'document'])
+        ->name('providers.documents.show');
 
     Route::get('/bookings', [\App\Http\Controllers\Admin\BookingController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/{booking}', [\App\Http\Controllers\Admin\BookingController::class, 'show'])->name('bookings.show');

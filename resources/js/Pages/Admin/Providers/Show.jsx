@@ -97,6 +97,23 @@ const Icon = {
             <path d="M10 2l6 2.5v5c0 3.6-2.6 6.5-6 8-3.4-1.5-6-4.4-6-8v-5L10 2z" />
         </svg>
     ),
+    /* Document icon */
+    Document: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" />
+            <path d="M12 3v4h4M7 11h6M7 14h6" />
+        </svg>
+    ),
+    /* External link icon */
+    External: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M11 4h5v5" />
+            <path d="M16 4l-7 7" />
+            <path d="M15 12v3a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h3" />
+        </svg>
+    ),
 };
 
 /* ---------- Status pill ---------- */
@@ -136,6 +153,13 @@ const districtLabels = {
     teluk_intan: 'Teluk Intan',
 };
 
+/* Document type labels */
+const documentLabels = {
+    identity:    'Kad pengenalan (IC)',
+    ssm:         'Sijil SSM',
+    certificate: 'Sijil kemahiran',
+};
+
 const formatDate = (date) => {
     if (!date) return '—';
     return new Date(date).toLocaleDateString('ms-MY', {
@@ -151,6 +175,7 @@ export default function Show({ provider }) {
     const [processing, setProcessing] = useState(false);
     const [confirmAction, setConfirmAction] = useState(null); // 'approve' | 'reject' | 'suspend' | 'unsuspend'
     const [suspensionReason, setSuspensionReason] = useState('');
+    const [rejectionReason, setRejectionReason] = useState('');
     const [toast, setToast] = useState(null);
 
     /* Success toast from flash */
@@ -165,6 +190,7 @@ export default function Show({ provider }) {
     /* Open a confirmation modal */
     const ask = (type) => {
         setSuspensionReason('');
+        setRejectionReason('');
         setConfirmAction(type);
     };
 
@@ -179,6 +205,7 @@ export default function Show({ provider }) {
                 setProcessing(false);
                 setConfirmAction(null);
                 setSuspensionReason('');
+                setRejectionReason('');
             },
         };
 
@@ -187,7 +214,11 @@ export default function Show({ provider }) {
         if (confirmAction === 'approve') {
             router.patch(route('admin.providers.approve', id), {}, opts);
         } else if (confirmAction === 'reject') {
-            router.patch(route('admin.providers.reject', id), {}, opts);
+            router.patch(
+                route('admin.providers.reject', id),
+                { rejection_reason: rejectionReason },
+                opts
+            );
         } else if (confirmAction === 'suspend') {
             router.patch(
                 route('admin.providers.suspend', id),
@@ -201,6 +232,10 @@ export default function Show({ provider }) {
 
     const providerName = provider.business_name || provider.user?.name || 'Tukang';
     const initial = providerName.charAt(0).toUpperCase();
+
+    /* Documents + approval readiness */
+    const documents = Array.isArray(provider.documents) ? provider.documents : [];
+    const hasIdentity = documents.some((d) => d.type === 'identity');
 
     return (
         <AdminLayout title="Butiran tukang" breadcrumb="Pengurusan">
@@ -379,6 +414,63 @@ export default function Show({ provider }) {
                             )}
                         </div>
                     </div>
+
+                    {/* Documents card */}
+                    <div className="admin-card">
+                        <div className="admin-card__header">
+                            <div className="flex items-center justify-between gap-3">
+                                <h2 className="admin-card__title">Dokumen sokongan</h2>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-[color:var(--muted)]">
+                                    {documents.length} dokumen
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="admin-card__body">
+                            {documents.length === 0 ? (
+                                <p className="text-sm italic text-[color:var(--muted)]">
+                                    Tiada dokumen dimuat naik.
+                                </p>
+                            ) : (
+                                <ul className="flex flex-col gap-2">
+                                    {documents.map((doc) => (
+                                        <li key={doc.id}>
+                                            <a
+                                                href={route(
+                                                    'admin.providers.documents.show',
+                                                    [provider.id, doc.id]
+                                                )}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="group flex items-center gap-3 rounded-xl border border-[color:var(--line)] bg-white p-3 transition hover:border-[#a9cdb4] hover:bg-[color:var(--paper)]/60"
+                                            >
+                                                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[color:var(--lime)] text-[color:var(--green-dark)]">
+                                                    <Icon.Document
+                                                        style={{ width: 16, height: 16 }}
+                                                    />
+                                                </span>
+
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-[color:var(--muted)]">
+                                                        {documentLabels[doc.type] ??
+                                                            doc.type}
+                                                    </span>
+                                                    <span className="block truncate text-sm font-semibold text-[color:var(--ink)]">
+                                                        {doc.original_name}
+                                                    </span>
+                                                </span>
+
+                                                <Icon.External
+                                                    className="shrink-0 text-[color:var(--muted)] transition group-hover:text-[color:var(--green)]"
+                                                    style={{ width: 14, height: 14 }}
+                                                />
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* RIGHT: Actions */}
@@ -395,9 +487,13 @@ export default function Show({ provider }) {
                                         tone="green"
                                         icon={<Icon.Check style={{ width: 16, height: 16 }} />}
                                         title="Luluskan tukang"
-                                        subtitle="Beri akses kepada tempahan"
+                                        subtitle={
+                                            hasIdentity
+                                                ? 'Beri akses kepada tempahan'
+                                                : 'Perlu dokumen IC sebelum lulus'
+                                        }
                                         onClick={() => ask('approve')}
-                                        disabled={processing}
+                                        disabled={processing || !hasIdentity}
                                     />
                                     <ActionButton
                                         tone="rose"
@@ -478,12 +574,19 @@ export default function Show({ provider }) {
                     action={confirmAction}
                     provider={provider}
                     processing={processing}
-                    reason={suspensionReason}
-                    onReasonChange={setSuspensionReason}
+                    reason={
+                        confirmAction === 'reject' ? rejectionReason : suspensionReason
+                    }
+                    onReasonChange={
+                        confirmAction === 'reject'
+                            ? setRejectionReason
+                            : setSuspensionReason
+                    }
                     onCancel={() => {
                         if (processing) return;
                         setConfirmAction(null);
                         setSuspensionReason('');
+                        setRejectionReason('');
                     }}
                     onConfirm={confirm}
                 />
@@ -610,8 +713,19 @@ function ConfirmModal({
         },
     }[config.tone];
 
-    const requiresReason = action === 'suspend';
+    const requiresReason = action === 'suspend' || action === 'reject';
     const reasonTooShort = requiresReason && reason.trim().length < 5;
+
+    const reasonLabel =
+        action === 'reject' ? 'Sebab penolakan' : 'Sebab penggantungan';
+    const reasonPlaceholder =
+        action === 'reject'
+            ? 'Contoh: Dokumen tidak lengkap atau tidak sah. Sila muat naik semula.'
+            : 'Contoh: Aduan pelanggan berulang kali tentang kerja tidak siap.';
+    const reasonHelper =
+        action === 'reject'
+            ? 'Sebab ini akan dipaparkan kepada tukang.'
+            : 'Sebab ini akan dipaparkan kepada tukang.';
 
     useEffect(() => {
         const onKey = (e) => {
@@ -683,27 +797,28 @@ function ConfirmModal({
                     {requiresReason && (
                         <div className="mt-4">
                             <label
-                                htmlFor="suspension_reason"
+                                htmlFor="confirm_reason"
                                 className="block text-xs font-bold uppercase tracking-wide text-[color:var(--muted)]"
                             >
-                                Sebab penggantungan
+                                {reasonLabel}
                             </label>
                             <textarea
-                                id="suspension_reason"
+                                id="confirm_reason"
                                 value={reason}
                                 onChange={(e) => onReasonChange(e.target.value)}
                                 rows={3}
-                                maxLength={300}
-                                placeholder="Contoh: Aduan pelanggan berulang kali tentang kerja tidak siap."
+                                maxLength={1000}
+                                required
+                                placeholder={reasonPlaceholder}
                                 className="mt-1.5 w-full resize-none rounded-xl border border-[color:var(--line)] bg-white px-3 py-2.5 text-sm leading-6 text-[color:var(--ink)] placeholder-[color:var(--muted)] outline-none transition focus:border-[color:var(--green)] focus:ring-2 focus:ring-[color:var(--green)]/15"
                             />
                             <div className="mt-1 flex items-center justify-between text-[11px] text-[color:var(--muted)]">
                                 <span>
                                     {reasonTooShort
                                         ? 'Sekurang-kurangnya 5 aksara.'
-                                        : 'Sebab ini akan dipaparkan kepada tukang.'}
+                                        : reasonHelper}
                                 </span>
-                                <span>{reason.length}/300</span>
+                                <span>{reason.length}/1000</span>
                             </div>
                         </div>
                     )}
