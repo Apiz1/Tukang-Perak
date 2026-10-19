@@ -76,6 +76,10 @@ Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
         Route::get('/reviews', [\App\Http\Controllers\Provider\ReviewController::class, 'index'])->name('reviews.index');
         Route::patch('/reviews/{review}/reply', [\App\Http\Controllers\Provider\ReviewController::class, 'reply'])->name('reviews.reply');
 
+        Route::get('/gallery', [\App\Http\Controllers\Provider\GalleryController::class, 'index'])->name('gallery.index');
+        Route::post('/gallery', [\App\Http\Controllers\Provider\GalleryController::class, 'store'])->name('gallery.store');
+        Route::delete('/gallery/{galleryPhoto}', [\App\Http\Controllers\Provider\GalleryController::class, 'destroy'])->name('gallery.destroy');
+
         });
     });
 

@@ -44,6 +44,7 @@ class BrowseController extends Controller
                     'user',
                     'services' => fn ($q) => $q->where('is_active', true),
                     'reviews' => fn ($q) => $q->with('customer:id,name')->latest()->take(10),
+                    'galleryPhotos',
                 ]),
             'isSaved' => auth()->check() && auth()->user()->role === 'customer'
                 ? auth()->user()->savedProviders()->where('provider_profile_id', $providerProfile->id)->exists()

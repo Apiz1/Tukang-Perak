@@ -104,12 +104,27 @@ const Icon = {
             <path d="M10 17s-7-4.5-7-9.5A3.5 3.5 0 0110 5a3.5 3.5 0 017 2.5C17 12.5 10 17 10 17z" />
         </svg>
     ),
-    /* 🆕 Flag icon for report button */
     Flag: (p) => (
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
              strokeLinecap="round" strokeLinejoin="round" {...p}>
             <path d="M4 3v14" />
             <path d="M4 4h9l-1.5 3L13 10H4" />
+        </svg>
+    ),
+    /* 🆕 Image icon for gallery */
+    Image: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="3" y="3" width="14" height="14" rx="2" />
+            <circle cx="7.5" cy="7.5" r="1.5" />
+            <path d="M17 13l-4-4-6 6" />
+        </svg>
+    ),
+    /* 🆕 X icon for lightbox close */
+    X: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.9"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M5 5l10 10M15 5L5 15" />
         </svg>
     ),
 };
@@ -183,6 +198,9 @@ export default function Show({ provider, isSaved = false }) {
     const name = getProviderName(provider);
     const services = Array.isArray(provider?.services) ? provider.services : [];
     const reviews = Array.isArray(provider?.reviews) ? provider.reviews : [];
+    const galleryPhotos = Array.isArray(provider?.gallery_photos)
+        ? provider.gallery_photos
+        : [];
 
     const rating = provider?.reviews_avg_rating ?? provider?.rating ?? provider?.average_rating ?? null;
     const reviewsCount = provider?.reviews_count ?? provider?.review_count ?? reviews.length ?? null;
@@ -195,6 +213,9 @@ export default function Show({ provider, isSaved = false }) {
     /* Save state */
     const [saved, setSaved] = useState(isSaved);
     const [saving, setSaving] = useState(false);
+
+    /* 🆕 Lightbox state */
+    const [lightboxIndex, setLightboxIndex] = useState(null);
 
     const toggleSave = () => {
         if (saving) return;
@@ -368,6 +389,42 @@ export default function Show({ provider, isSaved = false }) {
                                 <p className="mt-3 whitespace-pre-line text-sm leading-7 text-stone-700">
                                     {provider.description}
                                 </p>
+                            </div>
+                        )}
+
+                        {/* 🆕 ============ GALLERY ============ */}
+                        {galleryPhotos.length > 0 && (
+                            <div className="rounded-2xl border border-stone-200 bg-white">
+                                <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+                                    <div>
+                                        <h2 className="font-serif text-xl tracking-tight text-stone-900">
+                                            Galeri Kerja
+                                        </h2>
+                                        <p className="mt-0.5 text-xs text-stone-500">
+                                            {galleryPhotos.length} gambar
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="p-5 sm:p-6">
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                        {galleryPhotos.map((photo, index) => (
+                                            <button
+                                                key={photo.id}
+                                                type="button"
+                                                onClick={() => setLightboxIndex(index)}
+                                                className="group relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-100 transition hover:border-emerald-300 hover:shadow-sm"
+                                            >
+                                                <img
+                                                    src={`/storage/${photo.path}`}
+                                                    alt=""
+                                                    loading="lazy"
+                                                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -710,7 +767,7 @@ export default function Show({ provider, isSaved = false }) {
                             </div>
                         </div>
 
-                        {/* 🆕 Report card — customers only */}
+                        {/* Report card — customers only */}
                         {isCustomer && (
                             <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5">
                                 <div className="flex items-start gap-3">
@@ -749,6 +806,32 @@ export default function Show({ provider, isSaved = false }) {
                     </aside>
                 </div>
             </div>
+
+            {/* 🆕 ============ LIGHTBOX ============ */}
+            {lightboxIndex !== null && galleryPhotos[lightboxIndex] && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-900/80 p-4 backdrop-blur-sm"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={() => setLightboxIndex(null)}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setLightboxIndex(null)}
+                        className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                        aria-label="Tutup"
+                    >
+                        <Icon.X style={{ width: 18, height: 18 }} />
+                    </button>
+
+                    <img
+                        src={`/storage/${galleryPhotos[lightboxIndex].path}`}
+                        alt=""
+                        className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </MainLayout>
     );
 }

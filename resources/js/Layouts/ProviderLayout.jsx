@@ -75,6 +75,15 @@ const Icon = {
             <path d="M10 1.6l2.6 5.3 5.9.85-4.25 4.15 1 5.85L10 15l-5.25 2.75 1-5.85L1.5 7.75l5.9-.85L10 1.6z" />
         </svg>
     ),
+
+    Image: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+            strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="3" y="4" width="14" height="12" rx="2" />
+            <circle cx="7.5" cy="8.5" r="1.2" />
+            <path d="M3 14l4-4 3 3 3-3 4 4" />
+        </svg>
+    ),
 };
 
 /* ---------- Navigation config — plain paths ---------- */
@@ -92,6 +101,7 @@ const navSections = [
         items: [
             { label: 'Perkhidmatan saya', href: '/provider/services', icon: 'Wrench', requiresApproved: true },
             { label: 'Profil tukang',     href: '/provider/profile',  icon: 'User' },
+            { label: 'Galeri',            href: '/provider/gallery',  icon: 'Image' },
         ],
     },
 ];

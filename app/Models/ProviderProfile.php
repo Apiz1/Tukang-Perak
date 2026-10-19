@@ -62,4 +62,9 @@ class ProviderProfile extends Model
             ]
         );
     }
+
+    public function galleryPhotos(): HasMany
+    {
+        return $this->hasMany(GalleryPhoto::class)->latest();
+    }
 }
