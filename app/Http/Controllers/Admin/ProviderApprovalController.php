@@ -80,6 +80,9 @@ class ProviderApprovalController extends Controller
         abort_unless($document->provider_profile_id === $providerProfile->id, 404);
         abort_unless(Storage::disk('local')->exists($document->file_path), 404);
 
-        return Storage::disk('local')->response($document->file_path, $document->original_name);
+       return Storage::disk('local')->response($document->file_path, $document->original_name, [
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 }
