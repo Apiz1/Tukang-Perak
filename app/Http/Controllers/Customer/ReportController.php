@@ -7,6 +7,7 @@ use App\Models\ProviderProfile;
 use App\Models\Report;
 use App\Models\User;
 use App\Notifications\AdminAlertNotification;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
@@ -44,6 +45,12 @@ class ReportController extends Controller
             'reporter_id' => $request->user()->id,
             'provider_id' => $providerProfile->user_id,
         ]);
+
+        ActivityLog::record(
+            'report.created',
+            "Laporan baharu terhadap tukang {$providerProfile->user->name}",
+            $report,
+        );
 
         $admins = User::where('role', 'admin')->get();
         Notification::send($admins, new AdminAlertNotification(

@@ -70,6 +70,13 @@ class Booking extends Model
 
     public function notifyStatusChange(string $statusLabel, ?string $extraNote = null, ?string $onlyRole = null): void
     {
+         ActivityLog::record(
+            'booking.status_changed',
+            "Tempahan #{$this->id}: {$statusLabel}",
+            $this,
+            array_filter(['status' => $this->status, 'note' => $extraNote]),
+        );
+        
         if ($onlyRole !== 'provider') {
             Mail::to($this->customer->email)
                 ->send(new \App\Mail\BookingStatusChanged($this, $statusLabel, 'customer', $extraNote));

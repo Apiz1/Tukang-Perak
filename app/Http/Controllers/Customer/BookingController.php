@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Service;
+use App\Models\User;
+use App\Models\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class BookingController extends Controller
@@ -101,6 +102,8 @@ class BookingController extends Controller
         abort_unless($booking->status === 'requested', 403);
 
         $booking->update(['status' => 'cancelled']);
+
+        ActivityLog::record('booking.cancelled', "Pelanggan membatalkan tempahan #{$booking->id}", $booking);
 
         return back()->with('success', 'Booking cancelled.');
     }

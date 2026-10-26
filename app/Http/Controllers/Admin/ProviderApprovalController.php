@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\ActivityLog;
 
 class ProviderApprovalController extends Controller
 {
@@ -31,6 +32,8 @@ class ProviderApprovalController extends Controller
         $providerProfile->update(['status' => 'approved', 'rejection_reason' => null]);
         $providerProfile->user->notify(new \App\Notifications\ProviderStatusNotification($providerProfile, 'Profil anda telah diluluskan'));
 
+        ActivityLog::record('provider.approved', "Admin meluluskan tukang {$providerProfile->user->name}", $providerProfile);
+
         return back();
     }
 
@@ -43,6 +46,10 @@ class ProviderApprovalController extends Controller
             'rejection_reason' => $request->rejection_reason,
         ]);
         $providerProfile->user->notify(new \App\Notifications\ProviderStatusNotification($providerProfile, 'Profil anda telah ditolak'));
+
+        ActivityLog::record('provider.rejected', "Admin menolak tukang {$providerProfile->user->name}", $providerProfile, [
+            'reason' => $request->rejection_reason,
+        ]);
 
         return back();
     }
@@ -57,6 +64,10 @@ class ProviderApprovalController extends Controller
         ]);
         $providerProfile->user->notify(new \App\Notifications\ProviderStatusNotification($providerProfile, 'Akaun anda telah digantung'));
 
+        ActivityLog::record('provider.suspended', "Admin menggantung tukang {$providerProfile->user->name}", $providerProfile, [
+            'reason' => $request->suspension_reason,
+        ]);
+
         return back();
     }
 
@@ -65,6 +76,8 @@ class ProviderApprovalController extends Controller
         $providerProfile->update(['status' => 'approved', 'suspension_reason' => null]);
         $providerProfile->user->notify(new \App\Notifications\ProviderStatusNotification($providerProfile, 'Akaun anda telah diaktifkan semula'));
 
+        ActivityLog::record('provider.unsuspended', "Admin mengaktifkan semula tukang {$providerProfile->user->name}", $providerProfile);
+        
         return back();
     }
 
@@ -79,6 +92,13 @@ class ProviderApprovalController extends Controller
     {
         abort_unless($document->provider_profile_id === $providerProfile->id, 404);
         abort_unless(Storage::disk('local')->exists($document->file_path), 404);
+
+        ActivityLog::record(
+            'provider.document_viewed',
+            "Admin membuka dokumen {$document->type} milik {$providerProfile->user->name}",
+            $providerProfile,
+            ['document_type' => $document->type],
+        );
 
        return Storage::disk('local')->response($document->file_path, $document->original_name, [
             'X-Content-Type-Options' => 'nosniff',

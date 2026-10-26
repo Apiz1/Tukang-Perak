@@ -53,17 +53,31 @@ class Payment extends Model
             $transitioned = true;
         });
 
-        $this->refresh();
+        if ($transitioned) {
+            ActivityLog::record(
+                'payment.held',
+                "Bayaran #{$this->id} diterima dan ditahan (escrow)",
+                $this,
+                ['amount' => (string) $this->amount],
+            );
+        }
 
         return $transitioned;
     }
 
-    public function markAsReleased(): void
+    public function markAsReleased(array $context = []): void
     {
         $this->update([
             'status' => 'released',
             'released_at' => now(),
         ]);
+
+        ActivityLog::record(
+            'payment.released',
+            "Bayaran #{$this->id} dilepaskan kepada tukang",
+            $this,
+            ['amount' => (string) $this->amount, 'provider_amount' => (string) $this->provider_amount] + $context,
+        );
     }
 
     public function markAsDisputed(string $reason): void
@@ -72,5 +86,12 @@ class Payment extends Model
             'status' => 'disputed',
             'dispute_reason' => $reason,
         ]);
+
+        ActivityLog::record(
+            'payment.disputed',
+            "Pertikaian dibuka untuk bayaran #{$this->id}",
+            $this,
+            ['reason' => $reason],
+        );
     }
 }

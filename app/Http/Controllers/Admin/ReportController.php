@@ -45,6 +45,13 @@ class ReportController extends Controller
             'resolved_at' => now(),
         ]);
 
+        ActivityLog::record(
+            'report.resolved',
+            "Admin menyelesaikan laporan #{$report->id}",
+            $report,
+            ['status' => $data['status']],
+        );
+
         return redirect()->route('admin.reports.index')
             ->with('success', 'Laporan dikemas kini.');
     }

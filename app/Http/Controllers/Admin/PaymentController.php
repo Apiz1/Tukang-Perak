@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Models\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,6 +34,9 @@ class PaymentController extends Controller
         $payment->markAsReleased();
         $payment->booking->update(['status' => 'completed']);
 
+        $payment->update(['admin_note' => $request->admin_note]);
+        $payment->markAsReleased(['resolved_dispute' => true, 'admin_note' => $request->admin_note]);
+
         return back()->with('success', 'Payment released to provider.');
     }
 
@@ -47,6 +51,13 @@ class PaymentController extends Controller
             'admin_note' => $request->admin_note,
         ]);
         $payment->booking->update(['status' => 'cancelled']);
+
+        ActivityLog::record(
+            'payment.refunded',
+            "Admin memulangkan bayaran #{$payment->id} kepada pelanggan",
+            $payment,
+            ['amount' => (string) $payment->amount, 'admin_note' => $request->admin_note],
+        );
 
         return back()->with('success', 'Payment marked as refunded.');
     }
