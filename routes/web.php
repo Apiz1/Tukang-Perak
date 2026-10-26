@@ -84,19 +84,9 @@ Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-       Route::get('/dashboard', function () {
-        return Inertia::render('Admin/Dashboard', [
-            'stats' => [
-                'pendingProviders' => \App\Models\ProviderProfile::where('status', 'pending')->count(),
-                'totalProviders' => \App\Models\ProviderProfile::where('status', 'approved')->count(),
-                'totalCustomers' => \App\Models\User::where('role', 'customer')->count(),
-                'totalBookings' => \App\Models\Booking::count(),
-                'platformRevenue' => \App\Models\Payment::where('status', 'released')->sum('platform_fee'),
-                'totalGmv' => \App\Models\Payment::where('status', 'released')->sum('amount'),
-                'heldInEscrow' => \App\Models\Payment::where('status', 'held')->sum('amount'),
-            ],
-        ]);
-    })->name('dashboard');
+    
+    Route::get('/dashboard', \App\Http\Controllers\Admin\DashboardController::class)->name('dashboard');
+
 
     Route::get('/providers', [\App\Http\Controllers\Admin\ProviderApprovalController::class, 'index'])
         ->name('providers.index');
@@ -128,7 +118,9 @@ Route::middleware(['auth', 'verified', 'account.active'])->group(function () {
     Route::get('/reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'show'])->name('reports.show');
     Route::patch('/reports/{report}', [\App\Http\Controllers\Admin\ReportController::class, 'update'])->name('reports.update');
-        
+
+    Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
+
     });
 });
 

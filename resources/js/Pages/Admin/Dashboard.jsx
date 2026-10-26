@@ -274,11 +274,11 @@ export default function Dashboard({ stats, recentActivity = [] }) {
                         <div>
                             <h2 className="admin-card__title">Aktiviti terkini</h2>
                             <p className="mt-0.5 text-xs text-[color:var(--muted)]">
-                                Tempahan dan pendaftaran terbaru
+                                Aktiviti terkini dalam sistem
                             </p>
                         </div>
                         <Link
-                            href="/admin/bookings"
+                            href={route('admin.activity-logs.index')}
                             className="hidden text-sm font-bold text-[color:var(--green)] transition hover:text-[color:var(--green-dark)] sm:inline-flex sm:items-center sm:gap-1"
                         >
                             Lihat semua
@@ -296,25 +296,21 @@ export default function Dashboard({ stats, recentActivity = [] }) {
                                     Tiada aktiviti terkini
                                 </p>
                                 <p className="max-w-xs text-xs text-[color:var(--muted)]">
-                                    Aktiviti terbaru dari tukang dan pelanggan
-                                    akan dipaparkan di sini.
+                                    Aktiviti terbaru dari tukang dan pelanggan akan dipaparkan di sini.
                                 </p>
                             </div>
                         ) : (
                             <ul className="divide-y divide-[color:var(--line)]">
-                                {recentActivity.map((item, index) => (
-                                    <li
-                                        key={item.id ?? index}
-                                        className="flex items-start gap-3 py-3"
-                                    >
-                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[color:var(--warm)] text-sm">
-                                            {item.icon ?? '•'}
+                                {recentActivity.map((item) => (
+                                    <li key={item.id} className="flex items-start gap-3 py-3">
+                                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[color:var(--warm)] text-base">
+                                            {item.icon}
                                         </span>
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-semibold text-[color:var(--ink)]">
+                                            <p className="line-clamp-1 text-sm font-semibold text-[color:var(--ink)]">
                                                 {item.title}
                                             </p>
-                                            <p className="mt-0.5 truncate text-xs text-[color:var(--muted)]">
+                                            <p className="mt-0.5 text-xs text-[color:var(--muted)]">
                                                 {item.description}
                                             </p>
                                         </div>

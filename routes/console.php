@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('bookings:auto-confirm')->hourly();
+Schedule::command('model:prune')->daily();

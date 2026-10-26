@@ -85,6 +85,16 @@ const Icon = {
             <path d="M4 4h9l-1.5 3L13 10H4" />
         </svg>
     ),
+
+    List: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+            strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M7 5h9M7 10h9M7 15h9" />
+            <circle cx="4" cy="5" r="0.9" fill="currentColor" />
+            <circle cx="4" cy="10" r="0.9" fill="currentColor" />
+            <circle cx="4" cy="15" r="0.9" fill="currentColor" />
+        </svg>
+    ),
 };
 
 /* ---------- Navigation config (plain paths) ---------- */
@@ -99,10 +109,11 @@ const navSections = [
     {
         label: 'Pengurusan',
         items: [
-            { label: 'Tukang',    href: '/admin/providers', icon: 'Wrench', badge: 'providers' },
-            { label: 'Pelanggan', href: '/admin/customers', icon: 'Users' },
-            { label: 'Bayaran',   href: '/admin/payments',  icon: 'Card',   badge: 'payments' },
-            { label: 'Aduan',     href: '/admin/reports',   icon: 'Flag',   badge: 'reports' },
+            { label: 'Tukang',           href: '/admin/providers',       icon: 'Wrench', badge: 'providers' },
+            { label: 'Pelanggan',        href: '/admin/customers',       icon: 'Users' },
+            { label: 'Bayaran',          href: '/admin/payments',        icon: 'Card',   badge: 'payments' },
+            { label: 'Aduan',            href: '/admin/reports',         icon: 'Flag',   badge: 'reports' },
+            { label: 'Log Aktiviti',     href: '/admin/activity-logs',   icon: 'Flag',   badge: 'List' },
         ],
     },
 ];
@@ -263,7 +274,7 @@ export default function AdminLayout({ children, title, breadcrumb }) {
                             </p>
 
                             {section.items.map((item) => {
-                                const ItemIcon = Icon[item.icon];
+                                const ItemIcon = Icon[item.      icon];
                                 const active = isActive(item.href);
                                 const count = item.badge
                                     ? adminCounts?.[item.badge] ?? 0

@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\ProviderProfile;
 use App\Models\User;
 use App\Models\Booking;
+use Inertia\Testing\AssertableInertia as Assert;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -149,5 +150,76 @@ class ActivityLogTest extends TestCase
         $this->actingAs($admin)
             ->patch(route('admin.customers.suspend', $otherAdmin), ['suspension_reason' => 'x'])
             ->assertNotFound();
+    }
+
+    public function test_admin_can_view_and_filter_the_activity_log(): void
+{
+    $admin = User::factory()->create(['role' => 'admin']);
+    ActivityLog::record('security.amount_mismatch', 'Jumlah tidak sepadan');
+    ActivityLog::record('auth.login', 'Seseorang log masuk');
+
+    $this->actingAs($admin)
+        ->get(route('admin.activity-logs.index', ['category' => 'security']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/ActivityLogs/Index')
+            ->has('logs.data', 1)
+        );
+}
+
+public function test_customers_cannot_open_the_activity_log(): void
+{
+    $customer = User::factory()->create(['role' => 'customer']);
+
+    $this->actingAs($customer)
+        ->get(route('admin.activity-logs.index'))
+        ->assertForbidden();
+}
+
+    public function test_unknown_category_is_rejected(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.activity-logs.index', ['category' => "x' OR 1=1"]))
+            ->assertSessionHasErrors('category');
+    }
+
+    public function test_old_logs_are_pruned_and_recent_ones_are_kept(): void
+    {
+        ActivityLog::create([
+            'action' => 'auth.login',
+            'description' => 'old entry',
+            'created_at' => now()->subDays(ActivityLog::RETENTION_DAYS + 1),
+        ]);
+        ActivityLog::create([
+            'action' => 'auth.login',
+            'description' => 'recent entry',
+            'created_at' => now()->subDays(5),
+        ]);
+
+        $this->artisan('model:prune', ['--model' => ActivityLog::class])->assertSuccessful();
+
+        $this->assertDatabaseMissing('activity_logs', ['description' => 'old entry']);
+        $this->assertDatabaseHas('activity_logs', ['description' => 'recent entry']);
+    }
+
+    public function test_dashboard_shows_the_ten_latest_activities_without_plain_logins(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        foreach (range(1, 12) as $i) {
+            ActivityLog::record('booking.status_changed', "Tempahan #{$i}");
+        }
+        ActivityLog::record('auth.login', 'Noise');
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Dashboard')
+                ->has('recentActivity', 10)
+                ->where('recentActivity.0.title', 'Tempahan #12')
+            );
     }
 }

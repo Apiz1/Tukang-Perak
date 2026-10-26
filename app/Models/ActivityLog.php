@@ -6,11 +6,17 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
 
 #[Fillable(['user_id', 'action', 'description', 'subject_type', 'subject_id', 'properties', 'ip_address', 'created_at'])]
 class ActivityLog extends Model
 {
     public $timestamps = false;
+
+    use MassPrunable;
+
+    public const RETENTION_DAYS = 90;
 
     protected function casts(): array
     {
@@ -54,5 +60,10 @@ class ActivityLog extends Model
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+       public function prunable(): Builder
+    {
+        return static::where('created_at', '<', now()->subDays(self::RETENTION_DAYS));
     }
 }
