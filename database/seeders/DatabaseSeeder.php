@@ -16,5 +16,7 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
             'password' => bcrypt('password'),
         ]);
+
+         $admin->forceFill(['email_verified_at' => now()])->save();
     }
 }
