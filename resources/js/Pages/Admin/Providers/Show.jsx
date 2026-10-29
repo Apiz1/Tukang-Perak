@@ -114,6 +114,15 @@ const Icon = {
             <path d="M15 12v3a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1h3" />
         </svg>
     ),
+    /* 🆕 Image icon for gallery */
+    Image: (p) => (
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"
+             strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <rect x="3" y="3" width="14" height="14" rx="2" />
+            <circle cx="7.5" cy="7.5" r="1.5" />
+            <path d="M17 13l-4-4-6 6" />
+        </svg>
+    ),
 };
 
 /* ---------- Status pill ---------- */
@@ -178,6 +187,9 @@ export default function Show({ provider }) {
     const [rejectionReason, setRejectionReason] = useState('');
     const [toast, setToast] = useState(null);
 
+    /* 🆕 Lightbox state for gallery photos */
+    const [lightboxPhoto, setLightboxPhoto] = useState(null);
+
     /* Success toast from flash */
     useEffect(() => {
         if (flash?.status) {
@@ -236,6 +248,13 @@ export default function Show({ provider }) {
     /* Documents + approval readiness */
     const documents = Array.isArray(provider.documents) ? provider.documents : [];
     const hasIdentity = documents.some((d) => d.type === 'identity');
+
+    /* 🆕 Gallery photos */
+    const galleryPhotos = Array.isArray(provider.gallery_photos)
+        ? provider.gallery_photos
+        : Array.isArray(provider.galleryPhotos)
+        ? provider.galleryPhotos
+        : [];
 
     return (
         <AdminLayout title="Butiran tukang" breadcrumb="Pengurusan">
@@ -471,6 +490,57 @@ export default function Show({ provider }) {
                             )}
                         </div>
                     </div>
+
+                    {/* 🆕 Gallery card */}
+                    <div className="admin-card">
+                        <div className="admin-card__header">
+                            <div className="flex items-center justify-between gap-3">
+                                <h2 className="admin-card__title">Galeri kerja</h2>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-[color:var(--muted)]">
+                                    {galleryPhotos.length} gambar
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="admin-card__body">
+                            {galleryPhotos.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                                    <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[color:var(--lime)] text-[color:var(--green-dark)]">
+                                        <Icon.Image style={{ width: 20, height: 20 }} />
+                                    </span>
+                                    <p className="text-sm font-semibold text-[color:var(--ink)]">
+                                        Tiada gambar galeri
+                                    </p>
+                                    <p className="max-w-xs text-xs text-[color:var(--muted)]">
+                                        Tukang ini belum memuat naik gambar hasil
+                                        kerja mereka.
+                                    </p>
+                                </div>
+                            ) : (
+                                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                    {galleryPhotos.map((photo) => (
+                                        <li
+                                            key={photo.id}
+                                            className="group overflow-hidden rounded-xl border border-[color:var(--line)] bg-white transition hover:border-[#a9cdb4] hover:shadow-sm"
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={() => setLightboxPhoto(photo)}
+                                                className="block aspect-square w-full overflow-hidden bg-[color:var(--paper)]"
+                                            >
+                                                <img
+                                                    src={`/storage/${photo.path}`}
+                                                    alt=""
+                                                    loading="lazy"
+                                                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                                />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* RIGHT: Actions */}
@@ -590,6 +660,32 @@ export default function Show({ provider }) {
                     }}
                     onConfirm={confirm}
                 />
+            )}
+
+            {/* 🆕 ============ GALLERY LIGHTBOX ============ */}
+            {lightboxPhoto && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-900/80 p-4 backdrop-blur-sm"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={() => setLightboxPhoto(null)}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setLightboxPhoto(null)}
+                        className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                        aria-label="Tutup"
+                    >
+                        <Icon.X style={{ width: 18, height: 18 }} />
+                    </button>
+
+                    <img
+                        src={`/storage/${lightboxPhoto.path}`}
+                        alt=""
+                        className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
             )}
         </AdminLayout>
     );

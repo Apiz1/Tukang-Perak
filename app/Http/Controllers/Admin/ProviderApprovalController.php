@@ -84,7 +84,7 @@ class ProviderApprovalController extends Controller
     public function show(ProviderProfile $providerProfile): Response
     {
         return Inertia::render('Admin/Providers/Show', [
-            'provider' => $providerProfile->load(['user', 'documents']),
+            'provider' => $providerProfile->load(['user', 'documents','galleryPhotos']),
         ]);
     }
 
